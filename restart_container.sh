@@ -1,6 +1,9 @@
 cd Meituan
 git fetch origin
 git reset --hard origin/main
+chmod +x stop_race.sh
+chmod +x start_race.sh
+chmod +x copy_runfiles.sh
 ./stop_race.sh
 ./start_race.sh
 ./copy_runfiles.sh

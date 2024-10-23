@@ -3,6 +3,10 @@ cd Meituan
 # 拉取代码- GitHub账号配置好的 重新取名 教程
 git fetch origin
 git reset --hard origin/main
+# 授予权限
+chmod +x stop_race.sh
+chmod +x start_race.sh
+chmod +x copy_runfiles.sh
 # 原来的容器关掉
 ./stop_race.sh
 # 重新启动容器
