@@ -1,5 +1,5 @@
 # 目录
-cd MeituanRace
+cd Meituan
 # 拉取代码- GitHub账号配置好的 重新取名 教程
 git fetch origin
 git reset --hard origin/master
