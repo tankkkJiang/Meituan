@@ -686,7 +686,7 @@ class DemoPipeline:
             for it in iterators[:]:
                 try:
                     # 尝试从当前迭代器中提取一个订单
-                    print(f"tankkk看看当前事件是啥{self.events}")
+                    print(f"看看当前事件是啥{self.events}")
                     waybill = next(it)
                     print("提取订单")
                     # 初始化ros变量
@@ -716,6 +716,5 @@ class DemoPipeline:
 
 
 if __name__ == '__main__':
-    print("tankkk")
     race_demo = DemoPipeline()
     race_demo.running()
