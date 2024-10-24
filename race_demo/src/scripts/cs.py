@@ -690,7 +690,7 @@ class DemoPipeline:
                     print(f"看看当前事件是啥{self.events}")
                     waybill = next(it)
                     print("提取订单")
-                    print("waybill如下:\n")
+                    print("waybill内容如下:\n")
                     print(waybill)
                     # 初始化ros变量
                     state = WorkState.SELACT_WAYBILL_CAR_DRONE
