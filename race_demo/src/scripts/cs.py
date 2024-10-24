@@ -426,7 +426,7 @@ class DemoPipeline:
                         rospy.sleep(20)
                         state = WorkState.MOVE_CARGO_IN_DRONE
                 print(f"car_sn:{car_sn},drone_sn:{drone_sn},waybill:{waybill['cargoParam']['index']}")
-                print(f"loading_pos:{loading_pos}, takeoff_pos:{takeoff_pos}, landing_pos:{landing_pos},flying_height:{flying_height}")
+                print(f"loading_pos:{loading_pos},\n takeoff_pos:{takeoff_pos}\n, landing_pos:{landing_pos}\n,flying_height:{flying_height}")
             elif state == WorkState.MOVE_DRONE_ON_CAR:
                 # 将无人机移动到车上
                 car_physical_status = next(
@@ -460,6 +460,7 @@ class DemoPipeline:
                         (car for car in self.car_physical_status  if self.des_pos_reached(car.pos.position, loading_pos, 0.5) and car.car_work_state == CarPhysicalStatus.CAR_READY), None)
                 drone_sn = car_physical_status.drone_sn
                 # 挂外卖
+                # 从订单信息waybill中提取对应的外卖ID
                 cargo_id = waybill['cargoParam']['index']
                 self.move_cargo_in_drone(cargo_id, drone_sn, 15.0)
                 drone_physical_status = drone_physical_status = next(
@@ -689,6 +690,8 @@ class DemoPipeline:
                     print(f"看看当前事件是啥{self.events}")
                     waybill = next(it)
                     print("提取订单")
+                    print("waybill如下:\n")
+                    print(waybill)
                     # 初始化ros变量
                     state = WorkState.SELACT_WAYBILL_CAR_DRONE
                     thread = threading.Thread(
