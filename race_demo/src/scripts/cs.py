@@ -589,6 +589,8 @@ class DemoPipeline:
                     print(f"飞机着陆耗时: {back_land_time-back_time}秒")
                     print(f"来回的差值{back_land_time-cargo_time}")
                     print(f"总订单量{self.waybill_count }当前的分数{self.score}")
+                    print("waybill内容如下:")
+                    print(waybill)
                     # print(f"看看当前事件是啥{self.events}")
                     break
                         
@@ -690,8 +692,6 @@ class DemoPipeline:
                     print(f"看看当前事件是啥{self.events}")
                     waybill = next(it)
                     print("提取订单")
-                    print("waybill内容如下:\n")
-                    print(waybill)
                     # 初始化ros变量
                     state = WorkState.SELACT_WAYBILL_CAR_DRONE
                     thread = threading.Thread(
