@@ -95,6 +95,7 @@ class DemoPipeline:
         self.loading_cargo_point = self.config['taskParam']['loadingCargoPoint']
         self.map_boundary = self.config['taskParam']['mapBoundaryInfo']
         self.waybill_infos = self.config['taskParam']['waybillParamList']
+        self.waybill_start_time_millis = get_millis()
         self.unloading_cargo_stations = self.config['taskParam']['unloadingCargoStationList']
         self.drone_sn_list = [drone['droneSn'] for drone in self.drone_infos]
         self.car_sn_list = [car['magvSn'] for car in self.car_infos]
@@ -173,7 +174,6 @@ class DemoPipeline:
         msg.binding_cargo.cargo_id = cargo_id
         msg.binding_cargo.drone_sn = drone_sn
         self.cmd_pub.publish(msg)
-        move_cargo_in_drone_millis = get_millis()
         rospy.sleep(time_est)
         
 
@@ -214,7 +214,6 @@ class DemoPipeline:
         msg.drone_msg.drone_sn = drone_sn
         self.cmd_pub.publish(msg)
         rospy.sleep(time_est)
-        self.delivery_time_millis = get_millis()  # 记录送达时间
         state = next_state
 
     # 换电函数
@@ -474,6 +473,8 @@ class DemoPipeline:
                 # 从订单信息waybill中提取对应的外卖ID
                 cargo_id = waybill['cargoParam']['index']
                 self.move_cargo_in_drone(cargo_id, drone_sn, 15.0)
+                # 记录挂餐时间
+                self.move_cargo_in_drone_millis = get_millis() - self.waybill_start_time_millis
                 drone_physical_status = drone_physical_status = next(
                     (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                 bind_cargo_id = drone_physical_status.bind_cargo_id
@@ -549,6 +550,8 @@ class DemoPipeline:
                     speed = total_distance/cargo_time
                     self.release_cargo(
                         drone_sn, 5.0, WorkState.RELEASE_DRONE_RETURN)
+                    # 记录送达时间
+                    self.delivery_time_millis = get_millis() - self.waybill_start_time_millis
                     bill_state = "成功"
                     # print("********************")
                     # print("以下打印外卖送达后信息")
@@ -606,7 +609,7 @@ class DemoPipeline:
                     print(f"订单时间 orderTime: {waybill['orderTime']} - 毫秒戳")
                     print(f"最佳送达时间 betterTime: {waybill['betterTime']} - 毫秒戳")
                     print(f"超时时间 timeout: {waybill['timeout']} - 毫秒戳")
-                    print(f"挂餐时间：{dispatching_start_time} - 毫米戳")
+                    print(f"挂餐时间：{self.move_cargo_in_drone_millis} - 毫米戳")
                     print(f"外卖送达时间: {self.delivery_time_millis} - 毫秒戳")
                     print(f"总订单量{self.waybill_count }，当前的分数{self.score}")
                     # print(f"看看当前事件是啥{self.events}")
