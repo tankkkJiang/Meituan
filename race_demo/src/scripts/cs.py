@@ -595,10 +595,10 @@ class DemoPipeline:
                     print(f"飞机返回着陆耗时: {back_land_time}秒")
                     print(f"飞机着陆耗时: {back_land_time-back_time}秒")
                     print(f"来回的差值{back_land_time-cargo_time}")
-                    print(f"订单时间 orderTime: {waybill['orderTime']}")
-                    print(f"最佳送达时间 betterTime: {waybill['betterTime']}")
-                    print(f"超时时间 timeout: {waybill['timeout']}")
-                    print(f"外卖送达时间: {self.delivery_time.to_sec()}秒")        # 打印送达时间
+                    print(f"订单时间 orderTime: {waybill['orderTime'].tosec()}秒")
+                    print(f"最佳送达时间 betterTime: {waybill['betterTime'].tosec()}秒")
+                    print(f"超时时间 timeout: {waybill['timeout'].tosec()}秒")
+                    print(f"外卖送达时间: {self.delivery_time.to_sec()}秒")              # 打印送达时间
                     print(f"总订单量{self.waybill_count }当前的分数{self.score}")
                     # print(f"看看当前事件是啥{self.events}")
                     break
@@ -728,6 +728,6 @@ class DemoPipeline:
 
 
 if __name__ == '__main__':
-    print("本次git修改内容: 移动waybill打印到订单结束处")
+    # print("本次git修改内容: 移动waybill打印到订单结束处")
     race_demo = DemoPipeline()
     race_demo.running()
