@@ -99,6 +99,8 @@ class DemoPipeline:
         self.bills_status = None
         self.score = None
         self.events = None
+        self.delivery_time = None  # 初始化送达时间，最后可以打印
+
 
     # 仿真回调函数，获取实时信息
     def panoramic_info_callback(self, panoramic_info):
@@ -204,6 +206,7 @@ class DemoPipeline:
         msg.drone_msg.drone_sn = drone_sn
         self.cmd_pub.publish(msg)
         rospy.sleep(time_est)
+        self.delivery_time = rospy.Time.now()  # 记录送达时间
         state = next_state
 
     # 换电函数
@@ -539,6 +542,8 @@ class DemoPipeline:
                     self.release_cargo(
                         drone_sn, 5.0, WorkState.RELEASE_DRONE_RETURN)
                     bill_state = "成功"
+                    print("********************")
+                    print("以下打印外卖送达后信息")
                     print(f"car_sn:{car_sn},drone_sn:{drone_sn}:外卖送{bill_state}啦！！！！！")
                     waiting_time_1 = round(162.75-cargo_time, 1)
                     rospy.sleep(waiting_time_1)
@@ -577,6 +582,8 @@ class DemoPipeline:
                         flag = False
                 if self.des_pos_reached(landing_pos, drone_pos, 2) and drone_physical_status.drone_work_state == DronePhysicalStatus.READY:
                     back_land_time = (rospy.Time.now() - back_start_time).to_sec()
+                    print("********************")
+                    print("以下打印无人机降落后信息")
                     print(f"car_sn:{car_sn},drone_sn:{drone_sn}:waybill:{bind_cargo_id},loading_pos:{loading_pos}, takeoff_pos:{takeoff_pos}, landing_pos:{landing_pos},flying_height:{flying_height}")
                     print(f"外卖送{bill_state}啦！！！！！")
                     print(f"前期准备工作花费的时间{pre_time}")
@@ -588,9 +595,11 @@ class DemoPipeline:
                     print(f"飞机返回着陆耗时: {back_land_time}秒")
                     print(f"飞机着陆耗时: {back_land_time-back_time}秒")
                     print(f"来回的差值{back_land_time-cargo_time}")
+                    print(f"订单时间 orderTime: {waybill['orderTime']}")
+                    print(f"最佳送达时间 betterTime: {waybill['betterTime']}")
+                    print(f"超时时间 timeout: {waybill['timeout']}")
+                    print(f"外卖送达时间: {self.delivery_time.to_sec()}秒")        # 打印送达时间
                     print(f"总订单量{self.waybill_count }当前的分数{self.score}")
-                    print("waybill内容如下:")
-                    print(waybill)
                     # print(f"看看当前事件是啥{self.events}")
                     break
                         
