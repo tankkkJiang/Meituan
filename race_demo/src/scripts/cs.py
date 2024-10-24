@@ -34,6 +34,12 @@ import pymtmap
 
 # demo定义的状态流转
 
+def get_millis():
+    """
+    获取当前时间的毫秒值。
+    """
+    current_time = rospy.Time.now()  # 获取当前时间
+    return (current_time.secs * 1000) + (current_time.nsecs // 1_000_000)  # 转换为毫秒
 
 class WorkState(Enum):
     START = 1
@@ -99,7 +105,8 @@ class DemoPipeline:
         self.bills_status = None
         self.score = None
         self.events = None
-        self.delivery_time = None  # 初始化送达时间，最后可以打印
+        self.move_cargo_in_drone_millis = None  # 初始化挂餐时间，最后可以打印
+        self.delivery_time_millis = None        # 初始化送达时间，最后可以打印
 
 
     # 仿真回调函数，获取实时信息
@@ -166,6 +173,7 @@ class DemoPipeline:
         msg.binding_cargo.cargo_id = cargo_id
         msg.binding_cargo.drone_sn = drone_sn
         self.cmd_pub.publish(msg)
+        move_cargo_in_drone_millis = get_millis()
         rospy.sleep(time_est)
         
 
@@ -206,7 +214,7 @@ class DemoPipeline:
         msg.drone_msg.drone_sn = drone_sn
         self.cmd_pub.publish(msg)
         rospy.sleep(time_est)
-        self.delivery_time = rospy.Time.now()  # 记录送达时间
+        self.delivery_time_millis = get_millis()  # 记录送达时间
         state = next_state
 
     # 换电函数
@@ -598,8 +606,8 @@ class DemoPipeline:
                     print(f"订单时间 orderTime: {waybill['orderTime']} - 毫秒戳")
                     print(f"最佳送达时间 betterTime: {waybill['betterTime']} - 毫秒戳")
                     print(f"超时时间 timeout: {waybill['timeout']} - 毫秒戳")
-                    print(f"Dispatch开始时间{dispatching_start_time} - rospy.Time.now")
-                    print(f"外卖送达时间: {self.delivery_time.to_sec()}秒(to_sec)")              # 打印送达时间
+                    print(f"挂餐时间：{dispatching_start_time} - 毫米戳")
+                    print(f"外卖送达时间: {self.delivery_time_millis} - 毫秒戳")
                     print(f"总订单量{self.waybill_count }，当前的分数{self.score}")
                     # print(f"看看当前事件是啥{self.events}")
                     break
@@ -609,7 +617,7 @@ class DemoPipeline:
         print("开始运行")
         rospy.sleep(30.0)
         running_start_time = rospy.get_time()  # 使用 rospy 获取当前时间
-        print(f"running start_time:{running_start_time} - (rospy.get_time)")
+        print(f"running start_time:{running_start_time}")
         # 循环运行，直到达到 3600 秒
         while not rospy.is_shutdown():
             # 获取当前经过的时间
@@ -730,6 +738,6 @@ class DemoPipeline:
 
 
 if __name__ == '__main__':
-    print("cs.py")
+    print("tank.py")
     race_demo = DemoPipeline()
     race_demo.running()
