@@ -542,17 +542,17 @@ class DemoPipeline:
                     self.release_cargo(
                         drone_sn, 5.0, WorkState.RELEASE_DRONE_RETURN)
                     bill_state = "成功"
-                    print("********************")
-                    print("以下打印外卖送达后信息")
+                    # print("********************")
+                    # print("以下打印外卖送达后信息")
                     print(f"car_sn:{car_sn},drone_sn:{drone_sn}:外卖送{bill_state}啦！！！！！")
                     waiting_time_1 = round(162.75-cargo_time, 1)
                     rospy.sleep(waiting_time_1)
                     waiting_time_2 = waiting_time_1
                     rospy.sleep(waiting_time_2)
-                    print(f"car_sn:{car_sn},drone_sn:{drone_sn}:飞机送货耗时: {cargo_time} 秒")
-                    print(f"car_sn:{car_sn},drone_sn:{drone_sn}:总距离: {total_distance:.2f},速度: {speed}")
-                    print(f"car_sn:{car_sn},drone_sn:{drone_sn}:送货等待{waiting_time_1}秒")
-                    print(f"car_sn:{car_sn},drone_sn:{drone_sn}:返航等待{waiting_time_2}秒")
+                    # print(f"car_sn:{car_sn},drone_sn:{drone_sn}:飞机送货耗时: {cargo_time} 秒")
+                    # print(f"car_sn:{car_sn},drone_sn:{drone_sn}:总距离: {total_distance:.2f},速度: {speed}")
+                    # print(f"car_sn:{car_sn},drone_sn:{drone_sn}:送货等待{waiting_time_1}秒")
+                    # print(f"car_sn:{car_sn},drone_sn:{drone_sn}:返航等待{waiting_time_2}秒")
                     state =  WorkState.RELEASE_DRONE_RETURN
             elif state == WorkState.RELEASE_DRONE_RETURN:
                 # 无人机返回机场
@@ -595,9 +595,10 @@ class DemoPipeline:
                     print(f"飞机返回着陆耗时: {back_land_time}秒")
                     print(f"飞机着陆耗时: {back_land_time-back_time}秒")
                     print(f"来回的差值{back_land_time-cargo_time}")
-                    print(f"订单时间 orderTime: {waybill['orderTime'].tosec()}秒")
-                    print(f"最佳送达时间 betterTime: {waybill['betterTime'].tosec()}秒")
-                    print(f"超时时间 timeout: {waybill['timeout'].tosec()}秒")
+                    print(f"订单时间 orderTime: {waybill['orderTime'].to_sec()}秒")
+                    print(f"最佳送达时间 betterTime: {waybill['betterTime'].to_sec()}秒")
+                    print(f"超时时间 timeout: {waybill['timeout'].to_sec()}秒")
+                    print(f"开始时间{start_time.to_sec()}秒")
                     print(f"外卖送达时间: {self.delivery_time.to_sec()}秒")              # 打印送达时间
                     print(f"总订单量{self.waybill_count }当前的分数{self.score}")
                     # print(f"看看当前事件是啥{self.events}")
