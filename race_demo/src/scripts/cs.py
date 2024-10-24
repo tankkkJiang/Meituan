@@ -385,7 +385,7 @@ class DemoPipeline:
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
                 # 挑选小车
                 print("小车无人机初始化")
-                start_time = rospy.Time.now() 
+                dispatching_start_time = rospy.Time.now() 
                 car_physical_status = next(
                     (car for car in self.car_physical_status if self.des_pos_reached(car.pos.position, loading_pos, 1) and car.car_work_state == CarPhysicalStatus.CAR_READY), None)
                 car_sn = car_physical_status.sn 
@@ -504,7 +504,7 @@ class DemoPipeline:
                 # 判断无人机是否到达起飞地点
                 if (self.des_pos_reached(drone_pos, takeoff_pos, 1) and car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY):
                     print(f"car_sn:{car_sn},drone_sn:{drone_sn}:准备放飞无人机")
-                    pre_time = (rospy.Time.now() - start_time).to_sec()
+                    pre_time = (rospy.Time.now() - dispatching_start_time).to_sec()
                     print(f"car_sn:{car_sn},drone_sn:{drone_sn}:前期准备工作花费的时间{pre_time}")
                     start_pos = (drone_pos.x, drone_pos.y, flying_height)
                     middle_pos = (
@@ -595,12 +595,12 @@ class DemoPipeline:
                     print(f"飞机返回着陆耗时: {back_land_time}秒")
                     print(f"飞机着陆耗时: {back_land_time-back_time}秒")
                     print(f"来回的差值{back_land_time-cargo_time}")
-                    print(f"订单时间 orderTime: {waybill['orderTime'].to_sec()}秒")
-                    print(f"最佳送达时间 betterTime: {waybill['betterTime'].to_sec()}秒")
-                    print(f"超时时间 timeout: {waybill['timeout'].to_sec()}秒")
-                    print(f"开始时间{start_time.to_sec()}秒")
-                    print(f"外卖送达时间: {self.delivery_time.to_sec()}秒")              # 打印送达时间
-                    print(f"总订单量{self.waybill_count }当前的分数{self.score}")
+                    print(f"订单时间 orderTime: {waybill['orderTime']} - 毫秒戳")
+                    print(f"最佳送达时间 betterTime: {waybill['betterTime']} - 毫秒戳")
+                    print(f"超时时间 timeout: {waybill['timeout']} - 毫秒戳")
+                    print(f"Dispatch开始时间{dispatching_start_time} - 毫秒戳")
+                    print(f"外卖送达时间: {self.delivery_time.to_sec()}秒(to_sec)")              # 打印送达时间
+                    print(f"总订单量{self.waybill_count }，当前的分数{self.score}")
                     # print(f"看看当前事件是啥{self.events}")
                     break
                         
@@ -608,11 +608,12 @@ class DemoPipeline:
     def running(self):
         print("开始运行")
         rospy.sleep(30.0)
-        start_time = rospy.get_time()  # 使用 rospy 获取当前时间
+        running_start_time = rospy.get_time()  # 使用 rospy 获取当前时间
+        print(f"running start_time:{running_start_time} - (rospy.get_time)")
         # 循环运行，直到达到 3600 秒
         while not rospy.is_shutdown():
             # 获取当前经过的时间
-            elapsed_time = rospy.get_time() - start_time
+            elapsed_time = rospy.get_time() - running_start_time
             # 判断是否超过 3600 秒
             if elapsed_time >= 3600:
                 rospy.loginfo("Time is up! 3600 seconds have passed.")
