@@ -598,7 +598,7 @@ class DemoPipeline:
                     print(f"订单时间 orderTime: {waybill['orderTime']} - 毫秒戳")
                     print(f"最佳送达时间 betterTime: {waybill['betterTime']} - 毫秒戳")
                     print(f"超时时间 timeout: {waybill['timeout']} - 毫秒戳")
-                    print(f"Dispatch开始时间{dispatching_start_time} - 毫秒戳")
+                    print(f"Dispatch开始时间{dispatching_start_time} - rospy.Time.now")
                     print(f"外卖送达时间: {self.delivery_time.to_sec()}秒(to_sec)")              # 打印送达时间
                     print(f"总订单量{self.waybill_count }，当前的分数{self.score}")
                     # print(f"看看当前事件是啥{self.events}")
