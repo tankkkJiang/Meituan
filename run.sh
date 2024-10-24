@@ -4,4 +4,4 @@ catkin_make
 source devel/setup.bash
 
 # 运行
-rosrun race_demo cs.py
+rosrun race_demo tank.py

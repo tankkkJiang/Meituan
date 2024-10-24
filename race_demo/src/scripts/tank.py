@@ -34,6 +34,12 @@ import pymtmap
 
 # demo定义的状态流转
 
+def get_millis():
+    """
+    获取当前时间的毫秒值。
+    """
+    current_time = rospy.Time.now()  # 获取当前时间
+    return (current_time.secs * 1000) + (current_time.nsecs // 1_000_000)  # 转换为毫秒
 
 class WorkState(Enum):
     START = 1
@@ -206,7 +212,7 @@ class DemoPipeline:
         msg.drone_msg.drone_sn = drone_sn
         self.cmd_pub.publish(msg)
         rospy.sleep(time_est)
-        self.delivery_time = rospy.Time.now()  # 记录送达时间
+        self.delivery_time = get_millis()  # 记录送达时间
         state = next_state
 
     # 换电函数
@@ -385,7 +391,8 @@ class DemoPipeline:
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
                 # 挑选小车
                 print("小车无人机初始化")
-                start_time = rospy.Time.now() 
+                # dispatching_start_time = rospy.Time.now() 
+                dispatch_start_time = get_millis()  # 记录调度开始的时间
                 car_physical_status = next(
                     (car for car in self.car_physical_status if self.des_pos_reached(car.pos.position, loading_pos, 1) and car.car_work_state == CarPhysicalStatus.CAR_READY), None)
                 car_sn = car_physical_status.sn 
@@ -504,7 +511,7 @@ class DemoPipeline:
                 # 判断无人机是否到达起飞地点
                 if (self.des_pos_reached(drone_pos, takeoff_pos, 1) and car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY):
                     print(f"car_sn:{car_sn},drone_sn:{drone_sn}:准备放飞无人机")
-                    pre_time = (rospy.Time.now() - start_time).to_sec()
+                    pre_time = (get_millis() - dispatching_start_time).to_sec()
                     print(f"car_sn:{car_sn},drone_sn:{drone_sn}:前期准备工作花费的时间{pre_time}")
                     start_pos = (drone_pos.x, drone_pos.y, flying_height)
                     middle_pos = (
@@ -523,7 +530,7 @@ class DemoPipeline:
                     for i in range(1, len(route)):
                         total_distance += self.calculate_distance(route[i-1], route[i])
                     # 无人机按照路径飞行
-                    cargo_start_time = rospy.Time.now()
+                    cargo_start_time = get_millis()
                     self.fly_one_route(
                         drone_sn, route, 10.0, 60, WorkState.RELEASE_CARGO)
                     state = WorkState.RELEASE_CARGO
@@ -537,7 +544,7 @@ class DemoPipeline:
                 drone_pos = drone_physical_status.pos.position
                 # 释放货物
                 if (self.des_pos_reached(des_pos, drone_pos, 2) and drone_physical_status.drone_work_state ==  DronePhysicalStatus.READY):
-                    cargo_time = (rospy.Time.now() - cargo_start_time).to_sec()
+                    cargo_time = (get_millis() - cargo_start_time).to_sec()
                     speed = total_distance/cargo_time
                     self.release_cargo(
                         drone_sn, 5.0, WorkState.RELEASE_DRONE_RETURN)
@@ -567,7 +574,7 @@ class DemoPipeline:
                     end_pos_2 = Position(landing_pos.x, landing_pos.y, landing_pos.z-5)
                     route = route + [end_pos_1,end_pos_2]
                     # 飞到降落点上空，等待降落
-                    back_start_time = rospy.Time.now()
+                    back_start_time = get_millis()
                     self.fly_one_route(
                         drone_sn, route, 10, 60, WorkState.DRONE_LANDING) 
                     state =  WorkState.DRONE_LANDING
@@ -576,12 +583,12 @@ class DemoPipeline:
                     (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                 drone_pos = drone_physical_status.pos.position
                 if self.des_pos_reached(end_pos_2, drone_pos, 0.5):
-                    back_time = (rospy.Time.now() - back_start_time).to_sec()
+                    back_time = (get_millis() - back_start_time)
                     if flag:
                         print(f"car_sn:{car_sn},drone_sn:{drone_sn}:飞机返回耗时: {back_time}秒")
                         flag = False
                 if self.des_pos_reached(landing_pos, drone_pos, 2) and drone_physical_status.drone_work_state == DronePhysicalStatus.READY:
-                    back_land_time = (rospy.Time.now() - back_start_time).to_sec()
+                    back_land_time = (get_millis() - back_start_time)
                     print("********************")
                     print("以下打印无人机降落后信息")
                     print(f"car_sn:{car_sn},drone_sn:{drone_sn}:waybill_cargo_id:{bind_cargo_id},loading_pos:{loading_pos}, takeoff_pos:{takeoff_pos}, landing_pos:{landing_pos},flying_height:{flying_height}")
@@ -595,12 +602,12 @@ class DemoPipeline:
                     print(f"飞机返回着陆耗时: {back_land_time}秒")
                     print(f"飞机着陆耗时: {back_land_time-back_time}秒")
                     print(f"来回的差值{back_land_time-cargo_time}")
-                    print(f"订单时间 orderTime: {waybill['orderTime'].to_sec()}秒")
-                    print(f"最佳送达时间 betterTime: {waybill['betterTime'].to_sec()}秒")
-                    print(f"超时时间 timeout: {waybill['timeout'].to_sec()}秒")
-                    print(f"开始时间{start_time.to_sec()}秒")
-                    print(f"外卖送达时间: {self.delivery_time.to_sec()}秒")              # 打印送达时间
-                    print(f"总订单量{self.waybill_count }当前的分数{self.score}")
+                    print(f"订单时间 orderTime: {waybill['orderTime']} - 毫秒戳")
+                    print(f"最佳送达时间 betterTime: {waybill['betterTime']} - 毫秒戳")
+                    print(f"超时时间 timeout: {waybill['timeout']} - 毫秒戳")
+                    print(f"Dispatch开始时间{dispatching_start_time} - rospy.Time.now")
+                    print(f"外卖送达时间: {self.delivery_time.to_sec()}秒(to_sec)")              # 打印送达时间
+                    print(f"总订单量{self.waybill_count }，当前的分数{self.score}")
                     # print(f"看看当前事件是啥{self.events}")
                     break
                         
@@ -608,11 +615,12 @@ class DemoPipeline:
     def running(self):
         print("开始运行")
         rospy.sleep(30.0)
-        start_time = rospy.get_time()  # 使用 rospy 获取当前时间
+        running_start_time = rospy.get_time()  # 使用 rospy 获取当前时间
+        print(f"running start_time:{running_start_time} - (rospy.get_time)")
         # 循环运行，直到达到 3600 秒
         while not rospy.is_shutdown():
             # 获取当前经过的时间
-            elapsed_time = rospy.get_time() - start_time
+            elapsed_time = rospy.get_time() - running_start_time
             # 判断是否超过 3600 秒
             if elapsed_time >= 3600:
                 rospy.loginfo("Time is up! 3600 seconds have passed.")
@@ -729,6 +737,6 @@ class DemoPipeline:
 
 
 if __name__ == '__main__':
-    # print("本次git修改内容: 移动waybill打印到订单结束处")
+    print("运行tank.py")
     race_demo = DemoPipeline()
     race_demo.running()
