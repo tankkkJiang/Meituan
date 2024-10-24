@@ -719,6 +719,6 @@ class DemoPipeline:
 
 
 if __name__ == '__main__':
-    print("本次git修改内容: 增加waybill打印")
+    print("本次git修改内容: 移动waybill打印到订单结束处")
     race_demo = DemoPipeline()
     race_demo.running()
