@@ -102,7 +102,8 @@ class DemoPipeline:
         # 打印：Print each sorted waybill
         print("Sorted Waybills:")
         for waybill in self.waybill_infos:
-            print(f"Waybill ID: {waybill['index']}, Order Time: {waybill['orderTime']}, Better Time: {waybill['betterTime']}, Timeout: {waybill['timeout']}")
+            cargo_id = waybill['cargoParam']['index']
+            print(f"Waybill ID: {waybill['index']}, Cargo ID: {cargo_id}, Order Time: {waybill['orderTime']}, Better Time: {waybill['betterTime']}, Timeout: {waybill['timeout']}")
 
         self.unloading_cargo_stations = self.config['taskParam']['unloadingCargoStationList']
         self.drone_sn_list = [drone['droneSn'] for drone in self.drone_infos]
@@ -614,6 +615,7 @@ class DemoPipeline:
                     print(f"飞机返回着陆耗时: {back_land_time}秒")
                     print(f"飞机着陆耗时: {back_land_time-back_time}秒")
                     print(f"来回的差值{back_land_time-cargo_time}")
+                    print(f"编号Waybill ID: {waybill['index']}")
                     print(f"订单时间 orderTime: {waybill['orderTime']} - 毫秒戳")
                     print(f"最佳送达时间 betterTime: {waybill['betterTime']} - 毫秒戳")
                     print(f"超时时间 timeout: {waybill['timeout']} - 毫秒戳")
