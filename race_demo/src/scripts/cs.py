@@ -706,6 +706,8 @@ class DemoPipeline:
         rospy.sleep(30)
         print("初始化完成")
         groups = self.waybill_classification()
+        print("groups")
+        print(groups)
         # groups = self.group_waybills(self.waybill_infos, takeoff_pos)
         # 创建每个子列表的迭代器
         iterators = [iter(group) for group in groups]
