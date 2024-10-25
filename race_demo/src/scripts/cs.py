@@ -723,7 +723,8 @@ class DemoPipeline:
                     # 尝试从当前迭代器中提取一个订单
                     print(f"看看当前事件是啥{self.events}")
                     waybill = next(it)
-                    print("提取订单")
+                    print("提取订单: ")
+                    print(waybill)
                     # 初始化ros变量
                     state = WorkState.SELACT_WAYBILL_CAR_DRONE
                     thread = threading.Thread(
