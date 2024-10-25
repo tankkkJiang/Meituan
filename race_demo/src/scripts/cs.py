@@ -94,8 +94,16 @@ class DemoPipeline:
         self.car_infos = self.config['taskParam']['magvParamList']
         self.loading_cargo_point = self.config['taskParam']['loadingCargoPoint']
         self.map_boundary = self.config['taskParam']['mapBoundaryInfo']
+
         self.waybill_infos = self.config['taskParam']['waybillParamList']
+        # 在派发前按 'betterTime' 排序waybills
+        self.waybill_infos.sort(key=lambda x: x['betterTime'])
         self.waybill_start_time_millis = get_millis()
+        # 打印：Print each sorted waybill
+        print("Sorted Waybills:")
+        for waybill in self.waybill_infos:
+            print(f"Waybill ID: {waybill['index']}, Order Time: {waybill['orderTime']}, Better Time: {waybill['betterTime']}, Timeout: {waybill['timeout']}")
+
         self.unloading_cargo_stations = self.config['taskParam']['unloadingCargoStationList']
         self.drone_sn_list = [drone['droneSn'] for drone in self.drone_infos]
         self.car_sn_list = [car['magvSn'] for car in self.car_infos]
