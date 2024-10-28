@@ -5,7 +5,7 @@ import numpy as np
 from enum import Enum
 import multiprocessing
 import math
-import iterteools
+import itertools
 import threading
 
 from std_msgs.msg import String
@@ -37,7 +37,7 @@ import pymtmap
 base_time_ms = 1730084752049
 def get_millis():
     """
-    获取当前时间的毫秒值。
+    获取当前时间的毫米戳。
     """
     return int(rospy.get_time() * 1000 - base_time_ms)
 

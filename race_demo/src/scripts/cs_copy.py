@@ -749,6 +749,6 @@ class DemoPipeline:
 
 
 if __name__ == '__main__':
-    print("tank.py")
+    print("copy.py")
     race_demo = DemoPipeline()
     race_demo.running()
