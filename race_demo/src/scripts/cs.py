@@ -371,11 +371,17 @@ class DemoPipeline:
                     groups[index].append(waybill)
                     break 
 
-        # 在每个组内按 'betterTime' 进行排序
+        # # 在每个组内按 'betterTime' 进行排序
+        # for group in groups:
+        #     group.sort(key=lambda x: x['betterTime'])
+        # # 现在根据每个组中第一个条目的 'betterTime' 对所有组进行排序，如果组不为空
+        # sorted_groups = sorted(groups, key=lambda g: g[0]['betterTime'] if g else float('inf'))
+
+        # 在每个组内按 'betterTime' + 'timeout' 进行排序
         for group in groups:
-            group.sort(key=lambda x: x['betterTime'])
-        # 现在根据每个组中第一个条目的 'betterTime' 对所有组进行排序，如果组不为空
-        sorted_groups = sorted(groups, key=lambda g: g[0]['betterTime'] if g else float('inf'))
+            group.sort(key=lambda x: x['betterTime'] + x['timeout'])
+        # 现在根据每个组中第一个条目的 'betterTime' + 'timeout' 对所有组进行排序，如果组不为空
+        sorted_groups = sorted(groups, key=lambda g: g[0]['betterTime'] + g[0]['timeout'] if g else float('inf'))
 
         return sorted_groups
 
