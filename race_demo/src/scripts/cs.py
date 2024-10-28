@@ -5,7 +5,7 @@ import numpy as np
 from enum import Enum
 import multiprocessing
 import math
-import itertools
+import iterteools
 import threading
 
 from std_msgs.msg import String
@@ -38,8 +38,7 @@ def get_millis():
     """
     获取当前时间的毫秒值。
     """
-    current_time = rospy.Time.now()  # 获取当前时间
-    return (current_time.secs * 1000) + (current_time.nsecs // 1_000_000)  # 转换为毫秒
+    return int(rospy.get_time() * 1000)
 
 class WorkState(Enum):
     START = 1
@@ -711,9 +710,11 @@ class DemoPipeline:
         groups = self.waybill_classification()
         sorted_groups = [sorted(group, key=lambda x: x['betterTime']) for group in groups]
         # 打印排序后的结果
-        # for group in sorted_groups:
-        #     for item in group:
-        #         print(item)
+        for index, group in enumerate(sorted_groups):
+            print(f"分组 {index+1}:")  # 打印当前分组的序号
+            for item in group:
+                print(item)  # 打印分组内的每个元素
+
         
         # groups = self.group_waybills(self.waybill_infos, takeoff_pos)
         # 创建每个子列表的迭代器
