@@ -370,8 +370,13 @@ class DemoPipeline:
                 if distance < 1:
                     groups[index].append(waybill)
                     break 
-        # 排序
-        sorted_groups = [sorted(group, key=lambda x: x['betterTime']) for group in groups]
+
+        # 在每个组内按 'betterTime' 进行排序
+        for group in groups:
+            group.sort(key=lambda x: x['betterTime'])
+        # 现在根据每个组中第一个条目的 'betterTime' 对所有组进行排序，如果组不为空
+        sorted_groups = sorted(groups, key=lambda g: g[0]['betterTime'] if g else float('inf'))
+
         return sorted_groups
 
     # 订单分组
@@ -716,10 +721,10 @@ class DemoPipeline:
         # 确保在循环开始前子列表已经按照betterTime排序
         groups = self.waybill_classification()
         # 打印排序后的结果
-        # for index, group in enumerate(groups):
-        #     print(f"分组 {index+1}:")  # 打印当前分组的序号
-        #     for item in group:
-        #         print(item)  # 打印分组内的每个元素
+        for index, group in enumerate(groups):
+            print(f"分组 {index+1}:")  # 打印当前分组的序号
+            for item in group:
+                print(item)  # 打印分组内的每个元素
 
         
         # groups = self.group_waybills(self.waybill_infos, takeoff_pos)
