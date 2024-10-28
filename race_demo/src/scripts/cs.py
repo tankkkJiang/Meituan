@@ -34,12 +34,12 @@ import pymtmap
 
 # demo定义的状态流转
 
-base_time = 1730084752049
+base_time_ms = 1730084752049
 def get_millis():
     """
     获取当前时间的毫秒值。
     """
-    return int(rospy.get_time() * 1000)
+    return int(rospy.get_time() * 1000 - base_time_ms)
 
 class WorkState(Enum):
     START = 1
@@ -486,7 +486,7 @@ class DemoPipeline:
                 cargo_id = waybill['cargoParam']['index']
                 self.move_cargo_in_drone(cargo_id, drone_sn, 15.0)
                 # 记录挂餐时间
-                self.move_cargo_in_drone_millis = get_millis() - self.waybill_start_time_millis
+                self.move_cargo_in_drone_millis = get_millis()
                 drone_physical_status = drone_physical_status = next(
                     (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                 bind_cargo_id = drone_physical_status.bind_cargo_id
@@ -563,9 +563,8 @@ class DemoPipeline:
                     self.release_cargo(
                         drone_sn, 5.0, WorkState.RELEASE_DRONE_RETURN)
                     # 记录送达时间
-                    # self.delivery_time_millis = get_millis() - self.waybill_start_time_millis
-                    self.delivery_time_millis = rospy.get_time()
-                    print("rospy get time", self.delivery_time_millis)
+                    self.delivery_time_millis = get_millis()
+
                     bill_state = "成功"
                     # print("********************")
                     # print("以下打印外卖送达后信息")
@@ -637,6 +636,7 @@ class DemoPipeline:
         rospy.sleep(30.0)
         running_start_time = rospy.get_time()  # 使用 rospy 获取当前时间
         print(f"running start_time:{running_start_time}")
+        print(f"running start_time(基准时间):{running_start_time * 1000 - base_time_ms}")
         # 循环运行，直到达到 3600 秒
         while not rospy.is_shutdown():
             # 获取当前经过的时间
