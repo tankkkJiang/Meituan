@@ -34,12 +34,11 @@ import pymtmap
 
 # demo定义的状态流转
 
-base_time_ms = 1730084752049
 def get_millis():
     """
     获取当前时间的毫米戳。
     """
-    return int(rospy.get_time() * 1000 - base_time_ms)
+    return int(rospy.get_time() * 1000)
 
 class WorkState(Enum):
     START = 1
@@ -99,6 +98,7 @@ class DemoPipeline:
         # 在派发前按 'betterTime' 排序waybills
         self.waybill_infos.sort(key=lambda x: x['betterTime'])
         self.waybill_start_time_millis = get_millis()
+        print("self.waybill_start_time_millis:", self.waybill_start_time_millis)
 
         # 打印：Print each sorted waybill
         # print("Sorted Waybills:")
@@ -486,7 +486,7 @@ class DemoPipeline:
                 cargo_id = waybill['cargoParam']['index']
                 self.move_cargo_in_drone(cargo_id, drone_sn, 15.0)
                 # 记录挂餐时间
-                self.move_cargo_in_drone_millis = get_millis()
+                self.move_cargo_in_drone_millis = get_millis() - self.waybill_start_time_millis
                 drone_physical_status = drone_physical_status = next(
                     (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                 bind_cargo_id = drone_physical_status.bind_cargo_id
@@ -563,8 +563,8 @@ class DemoPipeline:
                     self.release_cargo(
                         drone_sn, 5.0, WorkState.RELEASE_DRONE_RETURN)
                     # 记录送达时间
-                    self.delivery_time_millis = get_millis()
-                    print("rospy_get_time for release", rospy.get_time())
+                    self.delivery_time_millis = get_millis() - self.waybill_start_time_millis
+                    print("self.delivery_time_millis", self.delivery_time_millis)
 
                     bill_state = "成功"
                     # print("********************")
@@ -636,9 +636,8 @@ class DemoPipeline:
         print("开始运行")
         rospy.sleep(30.0)
         running_start_time = rospy.get_time()  # 使用 rospy 获取当前时间
-        running_start_time_millis = get_millis()
+        running_start_time_ms = running_start_time * 1000
         print(f"running start_time:{running_start_time}")
-        print(f"running start_time(基准时间):{running_start_time_millis}")
         # 循环运行，直到达到 3600 秒
         while not rospy.is_shutdown():
             # 获取当前经过的时间
