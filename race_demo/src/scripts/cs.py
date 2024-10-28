@@ -635,8 +635,9 @@ class DemoPipeline:
         print("开始运行")
         rospy.sleep(30.0)
         running_start_time = rospy.get_time()  # 使用 rospy 获取当前时间
+        running_start_time_millis = get_millis()
         print(f"running start_time:{running_start_time}")
-        print(f"running start_time(基准时间):{running_start_time * 1000 - base_time_ms}")
+        print(f"running start_time(基准时间):{running_start_time_millis}")
         # 循环运行，直到达到 3600 秒
         while not rospy.is_shutdown():
             # 获取当前经过的时间
@@ -723,7 +724,7 @@ class DemoPipeline:
         
         # groups = self.group_waybills(self.waybill_infos, takeoff_pos)
         # 创建每个子列表的迭代器
-        iterators = [iter(group) for group in sorted_groups]
+        iterators = [iter(group) for group in groups]
         # # 循环提取每个子列表的一个元素，直到所有子列表都为空
         flying_height_list = [-86, -92, -98]
         flying_height_iterator = itertools.cycle(flying_height_list)
@@ -771,6 +772,6 @@ class DemoPipeline:
 
 
 if __name__ == '__main__':
-    print("tank.py")
+    print("tank111.py")
     race_demo = DemoPipeline()
     race_demo.running()
