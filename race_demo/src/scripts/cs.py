@@ -717,10 +717,10 @@ class DemoPipeline:
         # 确保在循环开始前子列表已经按照betterTime排序
         groups = self.waybill_classification()
         # 打印排序后的结果
-        for index, group in enumerate(groups):
-            print(f"分组 {index+1}:")  # 打印当前分组的序号
-            for item in group:
-                print(item)  # 打印分组内的每个元素
+        # for index, group in enumerate(groups):
+        #     print(f"分组 {index+1}:")  # 打印当前分组的序号
+        #     for item in group:
+        #         print(item)  # 打印分组内的每个元素
 
         
         # groups = self.group_waybills(self.waybill_infos, takeoff_pos)
