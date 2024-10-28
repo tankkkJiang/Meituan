@@ -34,6 +34,7 @@ import pymtmap
 
 # demo定义的状态流转
 
+base_time = 1730084752049
 def get_millis():
     """
     获取当前时间的毫秒值。
@@ -98,11 +99,12 @@ class DemoPipeline:
         # 在派发前按 'betterTime' 排序waybills
         self.waybill_infos.sort(key=lambda x: x['betterTime'])
         self.waybill_start_time_millis = get_millis()
+
         # 打印：Print each sorted waybill
-        print("Sorted Waybills:")
-        for waybill in self.waybill_infos:
-            cargo_id = waybill['cargoParam']['index']
-            print(f"Waybill ID: {waybill['index']}, Cargo ID: {cargo_id}, Order Time: {waybill['orderTime']}, Better Time: {waybill['betterTime']}, Timeout: {waybill['timeout']}")
+        # print("Sorted Waybills:")
+        # for waybill in self.waybill_infos:
+        #     cargo_id = waybill['cargoParam']['index']
+        #     print(f"Waybill ID: {waybill['index']}, Cargo ID: {cargo_id}, Order Time: {waybill['orderTime']}, Better Time: {waybill['betterTime']}, Timeout: {waybill['timeout']}")
 
         self.unloading_cargo_stations = self.config['taskParam']['unloadingCargoStationList']
         self.drone_sn_list = [drone['droneSn'] for drone in self.drone_infos]
@@ -368,7 +370,9 @@ class DemoPipeline:
                 if distance < 1:
                     groups[index].append(waybill)
                     break 
-        return groups
+        # 排序
+        sorted_groups = [sorted(group, key=lambda x: x['betterTime']) for group in groups]
+        return sorted_groups
 
     # 订单分组
     def group_waybills(self, waybill_infos, takeoff_point):
@@ -559,7 +563,9 @@ class DemoPipeline:
                     self.release_cargo(
                         drone_sn, 5.0, WorkState.RELEASE_DRONE_RETURN)
                     # 记录送达时间
-                    self.delivery_time_millis = get_millis() - self.waybill_start_time_millis
+                    # self.delivery_time_millis = get_millis() - self.waybill_start_time_millis
+                    self.delivery_time_millis = rospy.get_time()
+                    print("rospy get time", self.delivery_time_millis)
                     bill_state = "成功"
                     # print("********************")
                     # print("以下打印外卖送达后信息")
@@ -708,9 +714,8 @@ class DemoPipeline:
 
         # 确保在循环开始前子列表已经按照betterTime排序
         groups = self.waybill_classification()
-        sorted_groups = [sorted(group, key=lambda x: x['betterTime']) for group in groups]
         # 打印排序后的结果
-        for index, group in enumerate(sorted_groups):
+        for index, group in enumerate(groups):
             print(f"分组 {index+1}:")  # 打印当前分组的序号
             for item in group:
                 print(item)  # 打印分组内的每个元素
