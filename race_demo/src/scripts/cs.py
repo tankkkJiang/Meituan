@@ -564,6 +564,7 @@ class DemoPipeline:
                         drone_sn, 5.0, WorkState.RELEASE_DRONE_RETURN)
                     # 记录送达时间
                     self.delivery_time_millis = get_millis()
+                    print("rospy_get_time for release", rospy.get_time())
 
                     bill_state = "成功"
                     # print("********************")
