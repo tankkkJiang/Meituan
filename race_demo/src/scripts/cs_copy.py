@@ -695,6 +695,14 @@ class DemoPipeline:
             thread.join()
         rospy.sleep(30)
         print("初始化完成")
+
+        # groups = self.waybill_classification()
+        # sorted_groups = [sorted(group, key=lambda x: x['betterTime']) for group in groups]
+        # # 打印排序后的结果
+        # for group in sorted_groups:
+        #     for item in group:
+        #         print(item)
+
         groups = self.waybill_classification()
         # groups = self.group_waybills(self.waybill_infos, takeoff_pos)
         # 创建每个子列表的迭代器

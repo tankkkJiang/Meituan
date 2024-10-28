@@ -622,6 +622,7 @@ class DemoPipeline:
                     print(f"挂餐时间：{self.move_cargo_in_drone_millis} - 毫米戳")
                     print(f"外卖送达时间: {self.delivery_time_millis} - 毫秒戳")
                     print(f"总订单量{self.waybill_count }，当前的分数{self.score}")
+                    print("********************")
                     # print(f"看看当前事件是啥{self.events}")
                     break
                         
@@ -705,12 +706,15 @@ class DemoPipeline:
             thread.join()
         rospy.sleep(30)
         print("初始化完成")
+
+        # 确保在循环开始前子列表已经按照betterTime排序
         groups = self.waybill_classification()
         sorted_groups = [sorted(group, key=lambda x: x['betterTime']) for group in groups]
         # 打印排序后的结果
-        for group in sorted_groups:
-            for item in group:
-                print(item)
+        # for group in sorted_groups:
+        #     for item in group:
+        #         print(item)
+        
         # groups = self.group_waybills(self.waybill_infos, takeoff_pos)
         # 创建每个子列表的迭代器
         iterators = [iter(group) for group in sorted_groups]
@@ -723,13 +727,17 @@ class DemoPipeline:
             # 使用副本循环，因为可能会移除空的子列表
             # 创建每个子订单组的进程
             threads = []
+            # 每个迭代器对应一个已经排序的子列表
             for it in iterators[:]:
                 try:
                     # 尝试从当前迭代器中提取一个订单
+                    print("********************")
                     print(f"看看当前事件是啥{self.events}")
                     waybill = next(it)
+                    print("当前时间(秒):", rospy.get_time() - running_start_time)
                     print("提取订单: ")
-                    print(waybill)
+                    print("waybill如下:", waybill)
+                    print("********************")
                     # 初始化ros变量
                     state = WorkState.SELACT_WAYBILL_CAR_DRONE
                     thread = threading.Thread(
@@ -738,7 +746,7 @@ class DemoPipeline:
                     )
                     threads.append(thread)
                     thread.start()
-                    rospy.sleep(65.1)
+                    rospy.sleep(65.1)     # 每个65.1秒周期提取并处理一单订单
                 except StopIteration:
                     # 如果迭代器已经耗尽，从列表中移除
                     iterators.remove(it)
