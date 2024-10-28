@@ -777,6 +777,6 @@ class DemoPipeline:
 
 
 if __name__ == '__main__':
-    print("tank111.py")
+    print("tank222.py")
     race_demo = DemoPipeline()
     race_demo.running()
