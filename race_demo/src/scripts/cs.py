@@ -548,10 +548,17 @@ class DemoPipeline:
                     cargo_start_time = rospy.Time.now()
                     self.fly_one_route(
                         drone_sn, route, 10.0, 60, WorkState.RELEASE_CARGO)
+                    # 等待并检查无人机的状态
+                    while drone_physical_status.drone_work_state != DroneWorkState.FLYING:
+                        rospy.sleep(1)  # 每次检查前等待1秒
+                        # 获取更新的无人机状态
+                        drone_physical_status = next((drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
+                        if drone_physical_status.drone_work_state == DroneWorkState.FLYING:
+                            print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机正在飞行。")
+                            break
+                        print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 等待无人机开始飞行。")
                     print("2.drone_physical_status.drone_work_state", drone_physical_status.drone_work_state)
                     state = WorkState.RELEASE_CARGO
-                else:
-                    print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机未准备好或未到达放飞位置")
             elif state == WorkState.RELEASE_CARGO:
                 des_pos = Position(
                     waybill['targetPosition']['x'],
