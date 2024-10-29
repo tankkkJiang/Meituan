@@ -508,11 +508,6 @@ class DemoPipeline:
                 if car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
                     print("小车20s移动完毕")
                 rospy.sleep(5)
-                car_physical_status = next(
-                    (car for car in self.car_physical_status if car.sn == car_sn), None)
-                if car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
-                    print("小车25s移动完毕")
-                rospy.sleep(5)
                 state = WorkState.RELEASE_DRONE_OUT
             elif state == WorkState.RELEASE_DRONE_OUT:
                 # 放飞无人机
