@@ -549,11 +549,11 @@ class DemoPipeline:
                     self.fly_one_route(
                         drone_sn, route, 10.0, 60, WorkState.RELEASE_CARGO)
                     # 等待并检查无人机的状态
-                    while drone_physical_status.drone_work_state != DroneWorkState.FLYING:
+                    while drone_physical_status.drone_work_state != DronePhysicalStatus.FLYING:
                         rospy.sleep(1)  # 每次检查前等待1秒
                         # 获取更新的无人机状态
                         drone_physical_status = next((drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
-                        if drone_physical_status.drone_work_state == DroneWorkState.FLYING:
+                        if drone_physical_status.drone_work_state == DronePhysicalStatus.FLYING:
                             print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机正在飞行。")
                             break
                         print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 等待无人机开始飞行。")
