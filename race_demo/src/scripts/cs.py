@@ -413,7 +413,7 @@ class DemoPipeline:
                     print(f"{car_sn}挑选无人机")
                     # 遍历无人机列表，挑选状态为 READY 且在出生地点的无人机
                     drone_physical_status = next(
-                        (drone for drone in self.drone_physical_status if drone.drone_work_state == DronePhysicalStatus.READY and self.des_pos_reached(birth_pos, drone.pos.position, 0.5) and drone.remaining_capacity >= 26), None)
+                        (drone for drone in self.drone_physical_status if drone.drone_work_state == DronePhysicalStatus.READY and self.des_pos_reached(birth_pos, drone.pos.position, 0.5) and drone.remaining_capacity >= 30), None)
                     # 如果没有找到符合条件的无人机，直接返回 None
                     if drone_physical_status is None:
                         print(f"{car_sn}没有找到合适的无人机")
@@ -427,11 +427,11 @@ class DemoPipeline:
                 else:
                     drone_physical_status = next(
                         (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
-                    if drone_physical_status.remaining_capacity < 26:
-                        print("电量不足")
+                    if drone_physical_status.remaining_capacity < 30:
+                        print("drone_sn:", drone_sn, "电量不足")
                         # 挑选无人机，其状态是ready且在出生地点,电量充足
                         drone_physical_status = next(
-                            (drone for drone in self.drone_physical_status if drone.drone_work_state == DronePhysicalStatus.READY and self.des_pos_reached(birth_pos, drone.pos.position, 0.5) and drone.remaining_capacity >= 26), None)
+                            (drone for drone in self.drone_physical_status if drone.drone_work_state == DronePhysicalStatus.READY and self.des_pos_reached(birth_pos, drone.pos.position, 0.5) and drone.remaining_capacity >= 30), None)
                         if drone_physical_status is None:
                             print("其他合适的无人机也没电了")
                             rospy.sleep(15)
