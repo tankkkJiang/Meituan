@@ -116,6 +116,7 @@ class DemoPipeline:
     def panoramic_info_callback(self, panoramic_info):
         self.car_physical_status = panoramic_info.cars
         self.drone_physical_status = panoramic_info.drones
+        print("self.drone_physical_status", self.drone_physical_status)
         self.bills_status = panoramic_info.bills
         self.score = panoramic_info.score
         self.events = panoramic_info.events
