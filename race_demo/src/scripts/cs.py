@@ -518,11 +518,13 @@ class DemoPipeline:
                         (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                 drone_pos = drone_physical_status.pos.position
                 # 判断无人机是否到达起飞地点
+                print("1.drone_physical_status.drone_work_state", drone_physical_status.drone_work_state)
                 if (self.des_pos_reached(drone_pos, takeoff_pos, 1) and car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY):
                     print(f"car_sn:{car_sn},drone_sn:{drone_sn}:准备放飞无人机")
                     pre_time = (rospy.Time.now() - dispatching_start_time).to_sec()
                     print(f"car_sn:{car_sn},drone_sn:{drone_sn}:前期准备工作花费的时间{pre_time}")
                     start_pos = (drone_pos.x, drone_pos.y, flying_height)
+                    print("2.drone_physical_status.drone_work_state", drone_physical_status.drone_work_state)
                     middle_pos = (
                         waybill['targetPosition']['x'], waybill['targetPosition']['y'], flying_height)
                     start_to_middle_route = navigate_with_astar(start_pos, middle_pos, step_size=5, threshold=5)
@@ -542,6 +544,7 @@ class DemoPipeline:
                     cargo_start_time = rospy.Time.now()
                     self.fly_one_route(
                         drone_sn, route, 10.0, 60, WorkState.RELEASE_CARGO)
+                    print("3.drone_physical_status.drone_work_state", drone_physical_status.drone_work_state)
                     state = WorkState.RELEASE_CARGO
             elif state == WorkState.RELEASE_CARGO:
                 des_pos = Position(
