@@ -496,11 +496,11 @@ class DemoPipeline:
                 # 小车搭载挂外卖的无人机到达起飞点
                 # car_start_time = rospy.Time.now()
                 self.move_car_to_target_pos(car_list)
-                rospy.sleep(17)
+                rospy.sleep(20)
                 car_physical_status = next(
                     (car for car in self.car_physical_status if car.sn == car_sn), None)
                 if car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
-                    print("小车17秒移动完毕")
+                    print("小车20秒移动完毕")
                     state = WorkState.RELEASE_DRONE_OUT  # 如果小车已就绪，直接转换到释放无人机状态
                 else:
                     print("小车未就绪，等待额外时间")
