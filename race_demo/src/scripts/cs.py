@@ -550,6 +550,8 @@ class DemoPipeline:
                         drone_sn, route, 10.0, 60, WorkState.RELEASE_CARGO)
                     print("2.drone_physical_status.drone_work_state", drone_physical_status.drone_work_state)
                     state = WorkState.RELEASE_CARGO
+                else:
+                    print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机未准备好或未到达放飞位置")
             elif state == WorkState.RELEASE_CARGO:
                 des_pos = Position(
                     waybill['targetPosition']['x'],
