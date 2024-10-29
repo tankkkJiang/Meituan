@@ -500,19 +500,19 @@ class DemoPipeline:
                 car_physical_status = next(
                     (car for car in self.car_physical_status if car.sn == car_sn), None)
                 if car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
-                    print("小车17s移动完毕")
-                rospy.sleep(3)
-                car_physical_status = next(
-                    (car for car in self.car_physical_status if car.sn == car_sn), None)
-                if car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
-                    print("小车20s移动完毕")
-                rospy.sleep(5)
-                car_physical_status = next(
-                    (car for car in self.car_physical_status if car.sn == car_sn), None)
-                if car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
-                    print("小车25s移动完毕")
-                rospy.sleep(5)
-                state = WorkState.RELEASE_DRONE_OUT
+                    print("小车17秒移动完毕")
+                    state = WorkState.RELEASE_DRONE_OUT  # 如果小车已就绪，直接转换到释放无人机状态
+                else:
+                    print("小车未就绪，等待额外时间")
+                    rospy.sleep(5)  # 如果未就绪，则等待额外的时间，假设多5s一定就绪。
+                    # 再次检查小车状态
+                    car_physical_status = next(
+                        (car for car in self.car_physical_status if car.sn == car_sn), None)
+                    if car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
+                        print("额外等待5秒后, 小车现在就绪")
+                    else:
+                        print("额外等待5秒后, 小车仍未就绪")
+                    state = WorkState.RELEASE_DRONE_OUT
             elif state == WorkState.RELEASE_DRONE_OUT:
                 # 放飞无人机
                 # 查询无人机当前的位置
@@ -547,6 +547,20 @@ class DemoPipeline:
                     self.fly_one_route(
                         drone_sn, route, 10.0, 60, WorkState.RELEASE_CARGO)
                     state = WorkState.RELEASE_CARGO
+                    
+                    # 检查无人机是否仍然绑定在小车上，这表示它未放飞
+                    rospy.sleep(5)  # 给一些时间让状态更新
+                    updated_drone_status = next(
+                        (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
+                    if updated_drone_status.car_sn == car_sn:
+                        print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机尚未放飞，仍绑定在小车上")
+                        # 等待更多时间或处理阻止放飞的问题
+                        rospy.sleep(10)  # 额外等待时间
+                    else:
+                        print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机成功放飞")
+                else:
+                    print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 未准备好放飞无人机")
+                    rospy.sleep(5)  # 如果条件不满足则额外等待
             elif state == WorkState.RELEASE_CARGO:
                 des_pos = Position(
                     waybill['targetPosition']['x'],

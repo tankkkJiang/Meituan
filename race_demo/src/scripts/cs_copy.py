@@ -36,10 +36,9 @@ import pymtmap
 
 def get_millis():
     """
-    获取当前时间的毫秒值。
+    获取当前时间的毫米戳。
     """
-    current_time = rospy.Time.now()  # 获取当前时间
-    return (current_time.secs * 1000) + (current_time.nsecs // 1_000_000)  # 转换为毫秒
+    return int(rospy.get_time() * 1000)
 
 class WorkState(Enum):
     START = 1
@@ -94,8 +93,11 @@ class DemoPipeline:
         self.car_infos = self.config['taskParam']['magvParamList']
         self.loading_cargo_point = self.config['taskParam']['loadingCargoPoint']
         self.map_boundary = self.config['taskParam']['mapBoundaryInfo']
+
         self.waybill_infos = self.config['taskParam']['waybillParamList']
-        self.waybill_start_time_millis = get_millis()
+        # 在派发前按 betterTime + timeout 排序waybills
+        self.waybill_infos.sort(key=lambda x: x['betterTime'] + x['timeout'])
+
         self.unloading_cargo_stations = self.config['taskParam']['unloadingCargoStationList']
         self.drone_sn_list = [drone['droneSn'] for drone in self.drone_infos]
         self.car_sn_list = [car['magvSn'] for car in self.car_infos]
@@ -108,7 +110,7 @@ class DemoPipeline:
         self.events = None
         self.move_cargo_in_drone_millis = None  # 初始化挂餐时间，最后可以打印
         self.delivery_time_millis = None        # 初始化送达时间，最后可以打印
-
+        self.waybill_start_time_millis = None
 
     # 仿真回调函数，获取实时信息
     def panoramic_info_callback(self, panoramic_info):
@@ -360,7 +362,14 @@ class DemoPipeline:
                 if distance < 1:
                     groups[index].append(waybill)
                     break 
-        return groups
+
+        # 在每个组内按 'betterTime' + 'timeout' 进行排序
+        for group in groups:
+            group.sort(key=lambda x: x['betterTime'] + x['timeout'])
+        # 现在根据每个组中第一个条目的 'betterTime' + 'timeout' 对所有组进行排序，如果组不为空
+        sorted_groups = sorted(groups, key=lambda g: g[0]['betterTime'] + g[0]['timeout'] if g else float('inf'))
+
+        return sorted_groups
 
     # 订单分组
     def group_waybills(self, waybill_infos, takeoff_point):
@@ -387,6 +396,8 @@ class DemoPipeline:
     # 调度小车和无人机完成订单
     def dispatching(self, car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state):       
         flag = True
+        self.waybill_start_time_millis = get_millis()
+        print("Begin to dispatch, self.waybill_start_time_millis:", self.waybill_start_time_millis)
         self.waybill_count += 1
         while not rospy.is_shutdown():
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
@@ -552,6 +563,8 @@ class DemoPipeline:
                         drone_sn, 5.0, WorkState.RELEASE_DRONE_RETURN)
                     # 记录送达时间
                     self.delivery_time_millis = get_millis() - self.waybill_start_time_millis
+                    print("self.delivery_time_millis", self.delivery_time_millis)
+
                     bill_state = "成功"
                     # print("********************")
                     # print("以下打印外卖送达后信息")
@@ -606,12 +619,14 @@ class DemoPipeline:
                     print(f"飞机返回着陆耗时: {back_land_time}秒")
                     print(f"飞机着陆耗时: {back_land_time-back_time}秒")
                     print(f"来回的差值{back_land_time-cargo_time}")
+                    print(f"编号Waybill ID: {waybill['index']}")
                     print(f"订单时间 orderTime: {waybill['orderTime']} - 毫秒戳")
                     print(f"最佳送达时间 betterTime: {waybill['betterTime']} - 毫秒戳")
                     print(f"超时时间 timeout: {waybill['timeout']} - 毫秒戳")
                     print(f"挂餐时间：{self.move_cargo_in_drone_millis} - 毫米戳")
                     print(f"外卖送达时间: {self.delivery_time_millis} - 毫秒戳")
                     print(f"总订单量{self.waybill_count }，当前的分数{self.score}")
+                    print("********************")
                     # print(f"看看当前事件是啥{self.events}")
                     break
                         
@@ -620,6 +635,7 @@ class DemoPipeline:
         print("开始运行")
         rospy.sleep(30.0)
         running_start_time = rospy.get_time()  # 使用 rospy 获取当前时间
+        running_start_time_ms = running_start_time * 1000
         print(f"running start_time:{running_start_time}")
         # 循环运行，直到达到 3600 秒
         while not rospy.is_shutdown():
@@ -696,14 +712,15 @@ class DemoPipeline:
         rospy.sleep(30)
         print("初始化完成")
 
-        # groups = self.waybill_classification()
-        # sorted_groups = [sorted(group, key=lambda x: x['betterTime']) for group in groups]
-        # # 打印排序后的结果
-        # for group in sorted_groups:
-        #     for item in group:
-        #         print(item)
-
+        # 确保在循环开始前子列表已经按照betterTime排序
         groups = self.waybill_classification()
+        # 打印排序后的结果
+        for index, group in enumerate(groups):
+            print(f"分组 {index+1}:")  # 打印当前分组的序号
+            for item in group:
+                print(item)  # 打印分组内的每个元素
+
+        
         # groups = self.group_waybills(self.waybill_infos, takeoff_pos)
         # 创建每个子列表的迭代器
         iterators = [iter(group) for group in groups]
@@ -716,12 +733,17 @@ class DemoPipeline:
             # 使用副本循环，因为可能会移除空的子列表
             # 创建每个子订单组的进程
             threads = []
+            # 每个迭代器对应一个已经排序的子列表
             for it in iterators[:]:
                 try:
                     # 尝试从当前迭代器中提取一个订单
+                    print("********************")
                     print(f"看看当前事件是啥{self.events}")
                     waybill = next(it)
-                    print("提取订单")
+                    print("当前时间(秒):", rospy.get_time() - running_start_time)
+                    print("提取订单: ")
+                    print("waybill如下:", waybill)
+                    print("********************")
                     # 初始化ros变量
                     state = WorkState.SELACT_WAYBILL_CAR_DRONE
                     thread = threading.Thread(
@@ -730,7 +752,7 @@ class DemoPipeline:
                     )
                     threads.append(thread)
                     thread.start()
-                    rospy.sleep(65.1)
+                    rospy.sleep(65.1)     # 每个65.1秒周期提取并处理一单订单
                 except StopIteration:
                     # 如果迭代器已经耗尽，从列表中移除
                     iterators.remove(it)
@@ -749,6 +771,6 @@ class DemoPipeline:
 
 
 if __name__ == '__main__':
-    print("copy.py")
+    print("tank333.py")
     race_demo = DemoPipeline()
     race_demo.running()
