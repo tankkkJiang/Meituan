@@ -95,16 +95,8 @@ class DemoPipeline:
         self.map_boundary = self.config['taskParam']['mapBoundaryInfo']
 
         self.waybill_infos = self.config['taskParam']['waybillParamList']
-        # 在派发前按 'betterTime' 排序waybills
-        self.waybill_infos.sort(key=lambda x: x['betterTime'])
-        self.waybill_start_time_millis = get_millis()
-        print("self.waybill_start_time_millis:", self.waybill_start_time_millis)
-
-        # 打印：Print each sorted waybill
-        # print("Sorted Waybills:")
-        # for waybill in self.waybill_infos:
-        #     cargo_id = waybill['cargoParam']['index']
-        #     print(f"Waybill ID: {waybill['index']}, Cargo ID: {cargo_id}, Order Time: {waybill['orderTime']}, Better Time: {waybill['betterTime']}, Timeout: {waybill['timeout']}")
+        # 在派发前按 betterTime + timeout 排序waybills
+        self.waybill_infos.sort(key=lambda x: x['betterTime'] + x['timeout'])
 
         self.unloading_cargo_stations = self.config['taskParam']['unloadingCargoStationList']
         self.drone_sn_list = [drone['droneSn'] for drone in self.drone_infos]
@@ -118,7 +110,7 @@ class DemoPipeline:
         self.events = None
         self.move_cargo_in_drone_millis = None  # 初始化挂餐时间，最后可以打印
         self.delivery_time_millis = None        # 初始化送达时间，最后可以打印
-
+        self.waybill_start_time_millis = None
 
     # 仿真回调函数，获取实时信息
     def panoramic_info_callback(self, panoramic_info):
@@ -371,12 +363,6 @@ class DemoPipeline:
                     groups[index].append(waybill)
                     break 
 
-        # # 在每个组内按 'betterTime' 进行排序
-        # for group in groups:
-        #     group.sort(key=lambda x: x['betterTime'])
-        # # 现在根据每个组中第一个条目的 'betterTime' 对所有组进行排序，如果组不为空
-        # sorted_groups = sorted(groups, key=lambda g: g[0]['betterTime'] if g else float('inf'))
-
         # 在每个组内按 'betterTime' + 'timeout' 进行排序
         for group in groups:
             group.sort(key=lambda x: x['betterTime'] + x['timeout'])
@@ -410,6 +396,8 @@ class DemoPipeline:
     # 调度小车和无人机完成订单
     def dispatching(self, car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state):       
         flag = True
+        self.waybill_start_time_millis = get_millis()
+        print("Begin to dispatch, self.waybill_start_time_millis:", self.waybill_start_time_millis)
         self.waybill_count += 1
         while not rospy.is_shutdown():
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
@@ -783,6 +771,6 @@ class DemoPipeline:
 
 
 if __name__ == '__main__':
-    print("tank222.py")
+    print("tank333.py")
     race_demo = DemoPipeline()
     race_demo.running()
