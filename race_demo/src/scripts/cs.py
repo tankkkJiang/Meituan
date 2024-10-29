@@ -496,23 +496,30 @@ class DemoPipeline:
                 # 小车搭载挂外卖的无人机到达起飞点
                 # car_start_time = rospy.Time.now()
                 self.move_car_to_target_pos(car_list)
-                rospy.sleep(17)
-                car_physical_status = next(
-                    (car for car in self.car_physical_status if car.sn == car_sn), None)
-                print("car_physical_status:", car_physical_status)
-                if car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
-                    print("小车17s移动完毕")
-                rospy.sleep(3)
-                car_physical_status = next(
-                    (car for car in self.car_physical_status if car.sn == car_sn), None)
-                if car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
-                    print("小车20s移动完毕")
-                rospy.sleep(5)
-                car_physical_status = next(
-                    (car for car in self.car_physical_status if car.sn == car_sn), None)
-                if car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
-                    print("小车25s移动完毕")
-                rospy.sleep(5)
+
+                # 检查小车是否处于运动状态
+                while True:
+                    car_physical_status = next(
+                        (car for car in self.car_physical_status if car.sn == car_sn), None)
+                    if car_physical_status is None:
+                        print("未找到对应的小车状态信息")
+                        rospy.sleep(1)  # 短暂等待后再次检查
+                        continue
+                    
+                    if car_physical_status.car_work_state != CarPhysicalStatus.RUNNING:
+                        print("小车未在运动状态，等待小车开始移动...")
+                        rospy.sleep(1)  # 等待一秒再检查小车状态
+                    else:
+                        break  # 小车已经开始运动，跳出循环
+
+                while not car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
+                    print("小车正在移动中...")
+                    rospy.sleep(1)  # 每秒检查一次位置
+                    car_physical_status = next(
+                        (car for car in self.car_physical_status if car.sn == car_sn), None)
+
+                print("小车移动完毕")
+                # rospy.sleep(3)
                 state = WorkState.RELEASE_DRONE_OUT
             elif state == WorkState.RELEASE_DRONE_OUT:
                 # 放飞无人机
@@ -528,7 +535,6 @@ class DemoPipeline:
                     pre_time = (rospy.Time.now() - dispatching_start_time).to_sec()
                     print(f"car_sn:{car_sn},drone_sn:{drone_sn}:前期准备工作花费的时间{pre_time}")
                     start_pos = (drone_pos.x, drone_pos.y, flying_height)
-                    print("1.drone_physical_status.drone_work_state", drone_physical_status.drone_work_state)
                     middle_pos = (
                         waybill['targetPosition']['x'], waybill['targetPosition']['y'], flying_height)
                     start_to_middle_route = navigate_with_astar(start_pos, middle_pos, step_size=5, threshold=5)
@@ -557,7 +563,6 @@ class DemoPipeline:
                             print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机正在飞行。")
                             break
                         print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 等待无人机开始飞行。")
-                    print("2.drone_physical_status.drone_work_state", drone_physical_status.drone_work_state)
                     state = WorkState.RELEASE_CARGO
             elif state == WorkState.RELEASE_CARGO:
                 des_pos = Position(
@@ -726,13 +731,12 @@ class DemoPipeline:
 
         # 确保在循环开始前子列表已经按照betterTime排序
         groups = self.waybill_classification()
-        # 打印排序后的结果
-        for index, group in enumerate(groups):
-            print(f"分组 {index+1}:")  # 打印当前分组的序号
-            for item in group:
-                print(item)  # 打印分组内的每个元素
+        # # 打印排序后的结果
+        # for index, group in enumerate(groups):
+        #     print(f"分组 {index+1}:")  # 打印当前分组的序号
+        #     for item in group:
+        #         print(item)  # 打印分组内的每个元素
 
-        
         # groups = self.group_waybills(self.waybill_infos, takeoff_pos)
         # 创建每个子列表的迭代器
         iterators = [iter(group) for group in groups]
