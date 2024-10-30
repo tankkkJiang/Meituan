@@ -403,8 +403,8 @@ class DemoPipeline:
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
                 # 挑选小车
                 if self.waybill_count == 2:
-                    print("第二单休息50s，防止第一单准备时间过长")
-                    rospy.sleep(50)
+                    print("第二单休息70s, 防止第一单准备时间过长")
+                    rospy.sleep(70)
                 print(f"订单数{self.waybill_count}：小车无人机初始化")
                 dispatching_start_time = rospy.Time.now() 
                 car_physical_status = next(
