@@ -402,9 +402,9 @@ class DemoPipeline:
         while not rospy.is_shutdown():
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
                 # 挑选小车
-                if self.waybill_count == 2:
-                    print("第二单休息50s，防止第一单准备时间过长")
-                    rospy.sleep(50)
+                # if self.waybill_count == 2:
+                #     print("第二单休息50s，防止第一单准备时间过长")
+                #     rospy.sleep(50)
                 print(f"订单数{self.waybill_count}：小车无人机初始化")
                 dispatching_start_time = rospy.Time.now() 
                 car_physical_status = next(
@@ -517,8 +517,9 @@ class DemoPipeline:
                     
                     if car_physical_status.car_work_state == CarPhysicalStatus.CAR_RUNNING:
                         print("小车已经进入running状态。")
-                        rospy.sleep(2)  # 等待一秒再检查小车状态，防止虚假running
+                        rospy.sleep(3)  # 等待一秒再检查小车状态，防止虚假running
                         if car_physical_status.car_work_state == CarPhysicalStatus.CAR_RUNNING:
+                            print("过了3s仍然是running状态，确定正在运动。")
                             break  # 小车已经开始运动，跳出循环
                     else:
                         print("小车未在运动状态，等待小车开始移动...")
@@ -809,6 +810,6 @@ class DemoPipeline:
 
 
 if __name__ == '__main__':
-    print("tank111.py")
+    print("tank333.py")
     race_demo = DemoPipeline()
     race_demo.running()
