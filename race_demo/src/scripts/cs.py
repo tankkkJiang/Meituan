@@ -414,7 +414,7 @@ class DemoPipeline:
                 drone_sn = car_physical_status.drone_sn
                 # 挑选无人机
                 if drone_sn == '':
-                    print(f"{car_sn}挑选无人机")
+                    print(f"{car_sn}挑选无人机，当前小车没有无人机")
                     # 遍历无人机列表，挑选状态为 READY 且在出生地点的无人机
                     drone_physical_status = next(
                         (drone for drone in self.drone_physical_status if drone.drone_work_state == DronePhysicalStatus.READY and self.des_pos_reached(birth_pos, drone.pos.position, 0.5) and drone.remaining_capacity >= 30), None)
@@ -430,6 +430,7 @@ class DemoPipeline:
                         rospy.sleep(15)
                         state = WorkState.MOVE_DRONE_ON_CAR
                 else:
+                    print(f"{car_sn}当前小车有无人机")
                     drone_physical_status = next(
                         (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                     if drone_physical_status.remaining_capacity < 30:
@@ -448,8 +449,8 @@ class DemoPipeline:
                             drone_sn = drone_physical_status.sn
                             state = WorkState.MOVE_DRONE_ON_CAR
                     elif drone_physical_status.bind_cargo_id:  # 额外检查，防止挂两个货物
-                        print(f"无人机{drone_sn}已绑定货物，跳过绑定步骤")
-                        state = WorkState.MOVE_CAR_TO_LEAVING_POINT
+                        print(f"无人机{drone_sn}已绑定货物，可能会导致出错")
+                        state = WorkState.MOVE_CARGO_IN_DRONE
                     else:
                         print("车上有电量充足的无人机")
                         rospy.sleep(20)
