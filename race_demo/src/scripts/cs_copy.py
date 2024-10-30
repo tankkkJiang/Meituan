@@ -297,7 +297,6 @@ class DemoPipeline:
             msg.car_route_info.way_point.append(middle_2)
             msg.car_route_info.way_point.append(end)
 
-
         elif car_sn == "SIM-MAGV-0006":
             print("移动6号车")
             middle_1 = Position(193, 446, -16)
@@ -397,12 +396,12 @@ class DemoPipeline:
     def dispatching(self, car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state):       
         flag = True
         self.waybill_start_time_millis = get_millis()
-        print("Begin to dispatch, self.waybill_start_time_millis:", self.waybill_start_time_millis)
         self.waybill_count += 1
+        print(f"订单数{self.waybill_count}: Begin to dispatch")
         while not rospy.is_shutdown():
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
-                # 挑选小车
-                print("小车无人机初始化")
+
+                print(f"订单数{self.waybill_count}：小车无人机初始化")
                 dispatching_start_time = rospy.Time.now() 
                 car_physical_status = next(
                     (car for car in self.car_physical_status if self.des_pos_reached(car.pos.position, loading_pos, 1) and car.car_work_state == CarPhysicalStatus.CAR_READY), None)
@@ -410,11 +409,12 @@ class DemoPipeline:
                 drone_sn = car_physical_status.drone_sn
                 # 挑选无人机
                 if drone_sn == '':
-                    print(f"{car_sn}挑选无人机")
+                    print(f"{car_sn}挑选无人机，当前小车没有无人机")
                     # 遍历无人机列表，挑选状态为 READY 且在出生地点的无人机
                     drone_physical_status = next(
-                        (drone for drone in self.drone_physical_status if drone.drone_work_state == DronePhysicalStatus.READY and self.des_pos_reached(birth_pos, drone.pos.position, 0.5) and drone.remaining_capacity >= 26), None)
+                        (drone for drone in self.drone_physical_status if drone.drone_work_state == DronePhysicalStatus.READY and self.des_pos_reached(birth_pos, drone.pos.position, 0.5) and drone.remaining_capacity >= 30), None)
                     # 如果没有找到符合条件的无人机，直接返回 None
+                    # 添加条件，不得悬挂
                     if drone_physical_status is None:
                         print(f"{car_sn}没有找到合适的无人机")
                         rospy.sleep(35)
@@ -425,13 +425,14 @@ class DemoPipeline:
                         rospy.sleep(15)
                         state = WorkState.MOVE_DRONE_ON_CAR
                 else:
+                    print(f"{car_sn}当前小车有无人机")
                     drone_physical_status = next(
                         (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
-                    if drone_physical_status.remaining_capacity < 26:
+                    if drone_physical_status.remaining_capacity < 30:
                         print("电量不足")
                         # 挑选无人机，其状态是ready且在出生地点,电量充足
                         drone_physical_status = next(
-                            (drone for drone in self.drone_physical_status if drone.drone_work_state == DronePhysicalStatus.READY and self.des_pos_reached(birth_pos, drone.pos.position, 0.5) and drone.remaining_capacity >= 26), None)
+                            (drone for drone in self.drone_physical_status if drone.drone_work_state == DronePhysicalStatus.READY and self.des_pos_reached(birth_pos, drone.pos.position, 0.5) and drone.remaining_capacity >= 30), None)
                         if drone_physical_status is None:
                             print("其他合适的无人机也没电了")
                             rospy.sleep(15)
@@ -442,6 +443,9 @@ class DemoPipeline:
                                 drone_sn, car_sn, 15, WorkState.MOVE_DRONE_ON_CAR)
                             drone_sn = drone_physical_status.sn
                             state = WorkState.MOVE_DRONE_ON_CAR
+                    elif drone_physical_status.bind_cargo_id:  # 额外检查，防止挂两个货物
+                        print(f"无人机{drone_sn}已绑定货物，可能会导致出错")
+                        state = WorkState.MOVE_CARGO_IN_DRONE
                     else:
                         print("车上有电量充足的无人机")
                         rospy.sleep(20)
@@ -506,15 +510,24 @@ class DemoPipeline:
                         rospy.sleep(1)  # 短暂等待后再次检查
                         continue
                     
-                    if car_physical_status.car_work_state != CarPhysicalStatus.CAR_RUNNING:
+                    if car_physical_status.car_work_state == CarPhysicalStatus.CAR_RUNNING:
+                        print("小车已经进入running状态。")
+                        car_physical_status = next(
+                            (car for car in self.car_physical_status if car.sn == car_sn), None)
+                        car_pos = car_physical_status.pos.position
+                        if not self.des_pos_reached(loading_pos, car_pos, 1):
+                            print("小车位置已经不在装载点，正在移动...")
+                            break  # 小车已经开始运动，跳出循环
+                        else:
+                            # print("虽然running状态但还未移动")
+                            rospy.sleep(3)
+                    else:
                         print("小车未在运动状态，等待小车开始移动...")
                         rospy.sleep(1)  # 等待一秒再检查小车状态
-                    else:
-                        break  # 小车已经开始运动，跳出循环
 
                 while not car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
                     print("小车正在移动中...")
-                    rospy.sleep(1)  # 每秒检查一次位置
+                    rospy.sleep(1)  # 每秒检查一次位置不符合，有可能
                     car_physical_status = next(
                         (car for car in self.car_physical_status if car.sn == car_sn), None)
 
@@ -559,9 +572,18 @@ class DemoPipeline:
                         rospy.sleep(1)  # 每次检查前等待1秒
                         # 获取更新的无人机状态
                         drone_physical_status = next((drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
+                        print(f"car_sn:{car_sn},drone_sn:{drone_sn}, drone_physical_status.drone_work_state{drone_physical_status.drone_work_state}")
                         if drone_physical_status.drone_work_state == DronePhysicalStatus.FLYING:
                             print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机正在飞行。")
                             break
+                        elif drone_physical_status.drone_work_state == DronePhysicalStatus.LANDING:
+                            print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机已经降落。")
+                            break
+                        elif drone_physical_status.drone_work_state == DronePhysicalStatus.ERROR:
+                            print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机已经撞毁。")
+                            break
+                        elif drone_physical_status.drone_work_state == DronePhysicalStatus.TAKEOFF:
+                            print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机起飞中。")
                         print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 等待无人机开始飞行。")
                     state = WorkState.RELEASE_CARGO
             elif state == WorkState.RELEASE_CARGO:
@@ -768,7 +790,7 @@ class DemoPipeline:
                     )
                     threads.append(thread)
                     thread.start()
-                    rospy.sleep(65.1)     # 每个65.1秒周期提取并处理一单订单
+                    rospy.sleep(65.1)     # 每多少秒周期提取并处理一单订单
                 except StopIteration:
                     # 如果迭代器已经耗尽，从列表中移除
                     iterators.remove(it)
@@ -787,6 +809,6 @@ class DemoPipeline:
 
 
 if __name__ == '__main__':
-    print("tank111.py")
+    print("tank333.py")
     race_demo = DemoPipeline()
     race_demo.running()

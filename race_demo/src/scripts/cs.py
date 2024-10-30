@@ -111,6 +111,7 @@ class DemoPipeline:
         self.move_cargo_in_drone_millis = None  # 初始化挂餐时间，最后可以打印
         self.delivery_time_millis = None        # 初始化送达时间，最后可以打印
         self.waybill_start_time_millis = None
+        self.order_semaphore = threading.Semaphore(0)  # 初始不可用
 
     # 仿真回调函数，获取实时信息
     def panoramic_info_callback(self, panoramic_info):
@@ -297,7 +298,6 @@ class DemoPipeline:
             msg.car_route_info.way_point.append(middle_2)
             msg.car_route_info.way_point.append(end)
 
-
         elif car_sn == "SIM-MAGV-0006":
             print("移动6号车")
             middle_1 = Position(193, 446, -16)
@@ -401,10 +401,9 @@ class DemoPipeline:
         print(f"订单数{self.waybill_count}: Begin to dispatch")
         while not rospy.is_shutdown():
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
-                # 挑选小车
-                if self.waybill_count == 2:
-                    print("第二单休息70s, 防止第一单准备时间过长")
-                    rospy.sleep(70)
+                if self.waybill_count == 2:  # 假设waybill_count用于跟踪订单数
+                    print("第二单正在等待第一单完成...")
+                    self.order_semaphore.acquire()  # 阻塞，直到第一单释放信号量
                 print(f"订单数{self.waybill_count}：小车无人机初始化")
                 dispatching_start_time = rospy.Time.now() 
                 car_physical_status = next(
@@ -456,7 +455,6 @@ class DemoPipeline:
                         state = WorkState.MOVE_CARGO_IN_DRONE
                 print(f"car_sn:{car_sn},drone_sn:{drone_sn},waybill:{waybill['cargoParam']['index']}")
                 print(f"loading_pos:{loading_pos},\n takeoff_pos:{takeoff_pos}\n, landing_pos:{landing_pos}\n,flying_height:{flying_height}")
-            # 刚开始初始化时间长，防止挂两单
             elif state == WorkState.MOVE_DRONE_ON_CAR:
                 # 将无人机移动到车上
                 car_physical_status = next(
@@ -537,6 +535,7 @@ class DemoPipeline:
                         (car for car in self.car_physical_status if car.sn == car_sn), None)
 
                 print("小车移动完毕")
+                self.order_semaphore.release()  # 释放信号量，允许第二单开始
                 # rospy.sleep(3)
                 state = WorkState.RELEASE_DRONE_OUT
             elif state == WorkState.RELEASE_DRONE_OUT:
@@ -795,7 +794,7 @@ class DemoPipeline:
                     )
                     threads.append(thread)
                     thread.start()
-                    rospy.sleep(75)     # 每多少秒周期提取并处理一单订单
+                    rospy.sleep(65.1)     # 每多少秒周期提取并处理一单订单
                 except StopIteration:
                     # 如果迭代器已经耗尽，从列表中移除
                     iterators.remove(it)
