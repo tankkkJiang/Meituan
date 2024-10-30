@@ -417,7 +417,7 @@ class DemoPipeline:
                     # 如果没有找到符合条件的无人机，直接返回 None
                     if drone_physical_status is None:
                         print(f"{car_sn}没有找到合适的无人机")
-                        rospy.sleep(35)
+                        rospy.sleep(15)
                         state = WorkState.MOVE_CAR_TO_LEAVING_POINT
                     else:
                         drone_sn = drone_physical_status.sn
@@ -428,7 +428,7 @@ class DemoPipeline:
                     drone_physical_status = next(
                         (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                     if drone_physical_status.remaining_capacity < 30:
-                        print("drone_sn:", drone_sn, "电量不足")
+                        print("电量不足")
                         # 挑选无人机，其状态是ready且在出生地点,电量充足
                         drone_physical_status = next(
                             (drone for drone in self.drone_physical_status if drone.drone_work_state == DronePhysicalStatus.READY and self.des_pos_reached(birth_pos, drone.pos.position, 0.5) and drone.remaining_capacity >= 30), None)
@@ -787,6 +787,6 @@ class DemoPipeline:
 
 
 if __name__ == '__main__':
-    print("tank222.py")
+    print("tank111.py")
     race_demo = DemoPipeline()
     race_demo.running()
