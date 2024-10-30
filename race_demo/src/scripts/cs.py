@@ -328,6 +328,7 @@ class DemoPipeline:
     
     # 小车按照循环点移动
     def move_car_to_target_pos(self, car_list):
+        print("正在调用循环小车移动")
         threads = []
         # 创建所有线程
         for car in car_list:
@@ -362,13 +363,11 @@ class DemoPipeline:
                 if distance < 1:
                     groups[index].append(waybill)
                     break 
-
         # 在每个组内按 'betterTime' + 'timeout' 进行排序
         for group in groups:
             group.sort(key=lambda x: x['betterTime'] + x['timeout'])
         # 现在根据每个组中第一个条目的 'betterTime' + 'timeout' 对所有组进行排序，如果组不为空
         sorted_groups = sorted(groups, key=lambda g: g[0]['betterTime'] + g[0]['timeout'] if g else float('inf'))
-
         return sorted_groups
 
     # 订单分组
@@ -401,8 +400,8 @@ class DemoPipeline:
         print(f"订单数{self.waybill_count}: Begin to dispatch")
         while not rospy.is_shutdown():
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
-                if self.waybill_count == 2:  # 假设waybill_count用于跟踪订单数
-                    print("第二单正在等待第一单完成...")
+                if self.waybill_count > 1:  # 假设waybill_count用于跟踪订单数
+                    print("正在等待第一单完成...")
                     self.order_semaphore.acquire()  # 阻塞，直到第一单释放信号量
                 print(f"订单数{self.waybill_count}：小车无人机初始化")
                 dispatching_start_time = rospy.Time.now() 
