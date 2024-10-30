@@ -111,6 +111,7 @@ class DemoPipeline:
         self.move_cargo_in_drone_millis = None  # 初始化挂餐时间，最后可以打印
         self.delivery_time_millis = None        # 初始化送达时间，最后可以打印
         self.waybill_start_time_millis = None
+        self.lock = threading.Lock()  # 初始化锁
 
     # 仿真回调函数，获取实时信息
     def panoramic_info_callback(self, panoramic_info):
@@ -137,17 +138,20 @@ class DemoPipeline:
 
     # 移动地面车辆的函数
     def move_car_with_start_and_end(self, car_sn, start, end, time_est, next_state):
-        # print("开始移动")
-        msg = UserCmdRequest()
-        msg.peer_id = self.peer_id
-        msg.task_guid = self.task_guid
-        msg.type = UserCmdRequest.USER_CMD_CAR_EXEC_ROUTE
-        msg.car_route_info.carSn = car_sn
-        msg.car_route_info.way_point.append(start)
-        msg.car_route_info.way_point.append(end)
-        msg.car_route_info.yaw = 0.0
-        self.cmd_pub.publish(msg)
-        rospy.sleep(time_est)
+        with self.lock:
+            print("move_car_with_start_and_end获得锁")
+            # print("开始移动")
+            msg = UserCmdRequest()
+            msg.peer_id = self.peer_id
+            msg.task_guid = self.task_guid
+            msg.type = UserCmdRequest.USER_CMD_CAR_EXEC_ROUTE
+            msg.car_route_info.carSn = car_sn
+            msg.car_route_info.way_point.append(start)
+            msg.car_route_info.way_point.append(end)
+            msg.car_route_info.yaw = 0.0
+            self.cmd_pub.publish(msg)
+            rospy.sleep(time_est)
+            print("move_car_with_start_and_end取消锁")
         
     # 检测位置到达的函数
     def des_pos_reached(self, des_pos, cur_pos, threshold):
@@ -181,31 +185,34 @@ class DemoPipeline:
 
     # 飞机航线飞行函数
     def fly_one_route(self, drone_sn, route, speed, time_est, next_state):
-        msg = UserCmdRequest()
-        msg.peer_id = self.peer_id
-        msg.task_guid = self.task_guid
-        msg.type = UserCmdRequest.USER_CMD_DRONE_EXEC_ROUTE
-        msg.drone_way_point_info.droneSn = drone_sn
-        takeoff_point = DroneWayPoint()
-        takeoff_point.type = DroneWayPoint.POINT_TAKEOFF
-        takeoff_point.timeoutsec = 1000
-        msg.drone_way_point_info.way_point.append(takeoff_point)
-        for waypoint in route:
-            middle_point = DroneWayPoint()
-            middle_point.type = DroneWayPoint.POINT_FLYING
-            middle_point.pos.x = waypoint.x
-            middle_point.pos.y = waypoint.y
-            middle_point.pos.z = waypoint.z
-            middle_point.v = speed
-            middle_point.timeoutsec = 1000
-            msg.drone_way_point_info.way_point.append(middle_point)
-        land_point = DroneWayPoint()
-        land_point.type = DroneWayPoint.POINT_LANDING
-        land_point.timeoutsec = 1000
-        msg.drone_way_point_info.way_point.append(land_point)
-        self.cmd_pub.publish(msg)
-        rospy.sleep(time_est)
-        state = next_state
+        with self.lock:
+            print("fly_one_route获得锁")
+            msg = UserCmdRequest()
+            msg.peer_id = self.peer_id
+            msg.task_guid = self.task_guid
+            msg.type = UserCmdRequest.USER_CMD_DRONE_EXEC_ROUTE
+            msg.drone_way_point_info.droneSn = drone_sn
+            takeoff_point = DroneWayPoint()
+            takeoff_point.type = DroneWayPoint.POINT_TAKEOFF
+            takeoff_point.timeoutsec = 1000
+            msg.drone_way_point_info.way_point.append(takeoff_point)
+            for waypoint in route:
+                middle_point = DroneWayPoint()
+                middle_point.type = DroneWayPoint.POINT_FLYING
+                middle_point.pos.x = waypoint.x
+                middle_point.pos.y = waypoint.y
+                middle_point.pos.z = waypoint.z
+                middle_point.v = speed
+                middle_point.timeoutsec = 1000
+                msg.drone_way_point_info.way_point.append(middle_point)
+            land_point = DroneWayPoint()
+            land_point.type = DroneWayPoint.POINT_LANDING
+            land_point.timeoutsec = 1000
+            msg.drone_way_point_info.way_point.append(land_point)
+            self.cmd_pub.publish(msg)
+            rospy.sleep(time_est)
+            state = next_state
+            print("fly_one_route取消锁")
 
     # 抛餐函数
     def release_cargo(self, drone_sn, time_est, next_state):
