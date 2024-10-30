@@ -405,7 +405,7 @@ class DemoPipeline:
                 if self.waybill_count == 2:
                     print("第二单休息15s，防止第一单准备时间过长")
                     rospy.sleep(15)
-                print("小车无人机初始化")
+                print(f"订单数的{self.waybill_count}：小车无人机初始化")
                 dispatching_start_time = rospy.Time.now() 
                 car_physical_status = next(
                     (car for car in self.car_physical_status if self.des_pos_reached(car.pos.position, loading_pos, 1) and car.car_work_state == CarPhysicalStatus.CAR_READY), None)
