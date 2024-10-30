@@ -399,13 +399,12 @@ class DemoPipeline:
         self.waybill_start_time_millis = get_millis()
         print("Begin to dispatch, self.waybill_start_time_millis:", self.waybill_start_time_millis)
         self.waybill_count += 1
-        if self.waybill_count == 1:
-            print("第一单休息15s")
-            rospy.sleep(15)
-            # 刚开始初始化时间长，防止挂两单
         while not rospy.is_shutdown():
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
                 # 挑选小车
+                if self.waybill_count == 2:
+                    print("第二单休息15s，防止第一单准备时间过长")
+                    rospy.sleep(15)
                 print("小车无人机初始化")
                 dispatching_start_time = rospy.Time.now() 
                 car_physical_status = next(
@@ -457,6 +456,7 @@ class DemoPipeline:
                         state = WorkState.MOVE_CARGO_IN_DRONE
                 print(f"car_sn:{car_sn},drone_sn:{drone_sn},waybill:{waybill['cargoParam']['index']}")
                 print(f"loading_pos:{loading_pos},\n takeoff_pos:{takeoff_pos}\n, landing_pos:{landing_pos}\n,flying_height:{flying_height}")
+            # 刚开始初始化时间长，防止挂两单
             elif state == WorkState.MOVE_DRONE_ON_CAR:
                 # 将无人机移动到车上
                 car_physical_status = next(
