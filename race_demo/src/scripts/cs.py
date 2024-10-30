@@ -138,20 +138,18 @@ class DemoPipeline:
 
     # 移动地面车辆的函数
     def move_car_with_start_and_end(self, car_sn, start, end, time_est, next_state):
-        with self.lock:
-            print("move_car_with_start_and_end获得锁")
-            # print("开始移动")
-            msg = UserCmdRequest()
-            msg.peer_id = self.peer_id
-            msg.task_guid = self.task_guid
-            msg.type = UserCmdRequest.USER_CMD_CAR_EXEC_ROUTE
-            msg.car_route_info.carSn = car_sn
-            msg.car_route_info.way_point.append(start)
-            msg.car_route_info.way_point.append(end)
-            msg.car_route_info.yaw = 0.0
-            self.cmd_pub.publish(msg)
-            rospy.sleep(time_est)
-            print("move_car_with_start_and_end取消锁")
+        # print("开始移动")
+        msg = UserCmdRequest()
+        msg.peer_id = self.peer_id
+        msg.task_guid = self.task_guid
+        msg.type = UserCmdRequest.USER_CMD_CAR_EXEC_ROUTE
+        msg.car_route_info.carSn = car_sn
+        msg.car_route_info.way_point.append(start)
+        msg.car_route_info.way_point.append(end)
+        msg.car_route_info.yaw = 0.0
+        self.cmd_pub.publish(msg)
+        rospy.sleep(time_est)
+        print("move_car_with_start_and_end取消锁")
         
     # 检测位置到达的函数
     def des_pos_reached(self, des_pos, cur_pos, threshold):
@@ -332,19 +330,23 @@ class DemoPipeline:
     
     # 小车按照循环点移动
     def move_car_to_target_pos(self, car_list):
-        threads = []
-        # 创建所有线程
-        for car in car_list:
-            thread = threading.Thread(
-                target=self.move_car, args=(car,)
-            )
-            threads.append(thread)
-        for thread in threads:  
-            thread.start()
-        # 等待所有线程完成
-        for thread in threads:
-            thread.join()
-        # print("小车位置初始化完成")
+        with self.lock:
+            print("小车开始循环移动，获得锁")
+            threads = []
+            # 创建所有线程
+            for car in car_list:
+                thread = threading.Thread(
+                    target=self.move_car, args=(car,)
+                )
+                threads.append(thread)
+            for thread in threads:  
+                thread.start()
+            # 等待所有线程完成
+            for thread in threads:
+                thread.join()
+            # print("小车位置初始化完成")
+            print("小车移动结束，归还锁")
+
 
     def waybill_classification(self):  # 这里的订单分类只分最优的4个卸货点
         waybill_points = [
@@ -557,7 +559,7 @@ class DemoPipeline:
                     # 无人机按照路径飞行
                     cargo_start_time = rospy.Time.now()
                     with self.lock:
-                        print("无人机起飞获取锁")
+                        print(f"无人机{drone_sn}起飞获取锁")
                         self.fly_one_route(
                             drone_sn, route, 10.0, 60, WorkState.RELEASE_CARGO)
                         # 等待并检查无人机的状态
@@ -569,7 +571,7 @@ class DemoPipeline:
                                 print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机正在飞行。")
                                 break
                             print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 等待无人机开始飞行。")
-                        print("无人机起飞取消锁")
+                        print(f"无人机{drone_sn}起飞取消锁")
                     state = WorkState.RELEASE_CARGO
             elif state == WorkState.RELEASE_CARGO:
                 des_pos = Position(
