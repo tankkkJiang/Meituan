@@ -417,12 +417,12 @@ class DemoPipeline:
                     # 如果没有找到符合条件的无人机，直接返回 None
                     if drone_physical_status is None:
                         print(f"{car_sn}没有找到合适的无人机")
-                        rospy.sleep(15)
+                        rospy.sleep(10)
                         state = WorkState.MOVE_CAR_TO_LEAVING_POINT
                     else:
                         drone_sn = drone_physical_status.sn
                         print(f"{car_sn}找到无人机{drone_sn}")
-                        rospy.sleep(15)
+                        rospy.sleep(10)
                         state = WorkState.MOVE_DRONE_ON_CAR
                 else:
                     drone_physical_status = next(
@@ -434,7 +434,7 @@ class DemoPipeline:
                             (drone for drone in self.drone_physical_status if drone.drone_work_state == DronePhysicalStatus.READY and self.des_pos_reached(birth_pos, drone.pos.position, 0.5) and drone.remaining_capacity >= 30), None)
                         if drone_physical_status is None:
                             print("其他合适的无人机也没电了")
-                            rospy.sleep(15)
+                            rospy.sleep(10)
                             state = WorkState.DRONE_BATTERY_REPLACEMENT
                         else:
                             print("换无人机")
@@ -444,7 +444,7 @@ class DemoPipeline:
                             state = WorkState.MOVE_DRONE_ON_CAR
                     else:
                         print("车上有电量充足的无人机")
-                        rospy.sleep(20)
+                        rospy.sleep(10)
                         state = WorkState.MOVE_CARGO_IN_DRONE
                 print(f"car_sn:{car_sn},drone_sn:{drone_sn},waybill:{waybill['cargoParam']['index']}")
                 print(f"loading_pos:{loading_pos},\n takeoff_pos:{takeoff_pos}\n, landing_pos:{landing_pos}\n,flying_height:{flying_height}")

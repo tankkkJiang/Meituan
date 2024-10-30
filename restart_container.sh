@@ -16,7 +16,7 @@ exit
 
 
 docker cp race_demo/src/scripts/ race_user_sdk_container:/root/catkin_ws/src/race_demo/src/
-docker exec -it race_user_sdk_container /bin/bash 
+docker exec -it race_user_sdk_container /bin/bash
 
 chmod +x /root/catkin_ws/src/race_demo/src/scripts/cs.py
 cp /home/sdk_for_user/map_client_sdk/for_py/* /root/catkin_ws/src/race_demo/src/scripts/
