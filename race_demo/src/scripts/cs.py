@@ -185,34 +185,31 @@ class DemoPipeline:
 
     # 飞机航线飞行函数
     def fly_one_route(self, drone_sn, route, speed, time_est, next_state):
-        with self.lock:
-            print("fly_one_route获得锁")
-            msg = UserCmdRequest()
-            msg.peer_id = self.peer_id
-            msg.task_guid = self.task_guid
-            msg.type = UserCmdRequest.USER_CMD_DRONE_EXEC_ROUTE
-            msg.drone_way_point_info.droneSn = drone_sn
-            takeoff_point = DroneWayPoint()
-            takeoff_point.type = DroneWayPoint.POINT_TAKEOFF
-            takeoff_point.timeoutsec = 1000
-            msg.drone_way_point_info.way_point.append(takeoff_point)
-            for waypoint in route:
-                middle_point = DroneWayPoint()
-                middle_point.type = DroneWayPoint.POINT_FLYING
-                middle_point.pos.x = waypoint.x
-                middle_point.pos.y = waypoint.y
-                middle_point.pos.z = waypoint.z
-                middle_point.v = speed
-                middle_point.timeoutsec = 1000
-                msg.drone_way_point_info.way_point.append(middle_point)
-            land_point = DroneWayPoint()
-            land_point.type = DroneWayPoint.POINT_LANDING
-            land_point.timeoutsec = 1000
-            msg.drone_way_point_info.way_point.append(land_point)
-            self.cmd_pub.publish(msg)
-            rospy.sleep(time_est)
-            state = next_state
-            print("fly_one_route取消锁")
+        msg = UserCmdRequest()
+        msg.peer_id = self.peer_id
+        msg.task_guid = self.task_guid
+        msg.type = UserCmdRequest.USER_CMD_DRONE_EXEC_ROUTE
+        msg.drone_way_point_info.droneSn = drone_sn
+        takeoff_point = DroneWayPoint()
+        takeoff_point.type = DroneWayPoint.POINT_TAKEOFF
+        takeoff_point.timeoutsec = 1000
+        msg.drone_way_point_info.way_point.append(takeoff_point)
+        for waypoint in route:
+            middle_point = DroneWayPoint()
+            middle_point.type = DroneWayPoint.POINT_FLYING
+            middle_point.pos.x = waypoint.x
+            middle_point.pos.y = waypoint.y
+            middle_point.pos.z = waypoint.z
+            middle_point.v = speed
+            middle_point.timeoutsec = 1000
+            msg.drone_way_point_info.way_point.append(middle_point)
+        land_point = DroneWayPoint()
+        land_point.type = DroneWayPoint.POINT_LANDING
+        land_point.timeoutsec = 1000
+        msg.drone_way_point_info.way_point.append(land_point)
+        self.cmd_pub.publish(msg)
+        rospy.sleep(time_est)
+        state = next_state
 
     # 抛餐函数
     def release_cargo(self, drone_sn, time_est, next_state):
@@ -559,17 +556,20 @@ class DemoPipeline:
                         total_distance += self.calculate_distance(route[i-1], route[i])
                     # 无人机按照路径飞行
                     cargo_start_time = rospy.Time.now()
-                    self.fly_one_route(
-                        drone_sn, route, 10.0, 60, WorkState.RELEASE_CARGO)
-                    # 等待并检查无人机的状态
-                    while drone_physical_status.drone_work_state != DronePhysicalStatus.FLYING:
-                        rospy.sleep(1)  # 每次检查前等待1秒
-                        # 获取更新的无人机状态
-                        drone_physical_status = next((drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
-                        if drone_physical_status.drone_work_state == DronePhysicalStatus.FLYING:
-                            print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机正在飞行。")
-                            break
-                        print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 等待无人机开始飞行。")
+                    with self.lock:
+                        print("无人机起飞获取锁")
+                        self.fly_one_route(
+                            drone_sn, route, 10.0, 60, WorkState.RELEASE_CARGO)
+                        # 等待并检查无人机的状态
+                        while drone_physical_status.drone_work_state != DronePhysicalStatus.FLYING:
+                            rospy.sleep(1)  # 每次检查前等待1秒
+                            # 获取更新的无人机状态
+                            drone_physical_status = next((drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
+                            if drone_physical_status.drone_work_state == DronePhysicalStatus.FLYING:
+                                print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机正在飞行。")
+                                break
+                            print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 等待无人机开始飞行。")
+                        print("无人机起飞取消锁")
                     state = WorkState.RELEASE_CARGO
             elif state == WorkState.RELEASE_CARGO:
                 des_pos = Position(
