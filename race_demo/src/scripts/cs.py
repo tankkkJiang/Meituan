@@ -520,7 +520,7 @@ class DemoPipeline:
 
                 while not car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
                     print("小车正在移动中...")
-                    rospy.sleep(1)  # 每秒检查一次位置
+                    rospy.sleep(5)  # 每秒检查一次位置
                     car_physical_status = next(
                         (car for car in self.car_physical_status if car.sn == car_sn), None)
 
@@ -554,24 +554,29 @@ class DemoPipeline:
                     route = position_list + [end_pos]
                     # 计算总距离
                     total_distance = 0
-                    for i in range(1, len(route)):
-                        total_distance += self.calculate_distance(route[i-1], route[i])
-                    # 无人机按照路径飞行
-                    cargo_start_time = rospy.Time.now()
+
                     with self.lock:
-                        print(f"无人机{drone_sn}起飞获取锁")
+                        print(f"drone_sn:{drone_sn} 获取锁，进行起飞操作")
+                        for i in range(1, len(route)):
+                            total_distance += self.calculate_distance(route[i-1], route[i])
+                        # 无人机按照路径飞行
+                        cargo_start_time = rospy.Time.now()
                         self.fly_one_route(
                             drone_sn, route, 10.0, 60, WorkState.RELEASE_CARGO)
-                        # 等待并检查无人机的状态
-                        while drone_physical_status.drone_work_state != DronePhysicalStatus.FLYING:
-                            rospy.sleep(1)  # 每次检查前等待1秒
-                            # 获取更新的无人机状态
-                            drone_physical_status = next((drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
-                            if drone_physical_status.drone_work_state == DronePhysicalStatus.FLYING:
-                                print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机正在飞行。")
-                                break
-                            print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 等待无人机开始飞行。")
-                        print(f"无人机{drone_sn}起飞取消锁")
+                        print(f"")
+        
+                    # 等待并检查无人机的状态
+                    while drone_physical_status.drone_work_state != DronePhysicalStatus.FLYING:
+                        rospy.sleep(1)  # 每次检查前等待1秒
+                        # 获取更新的无人机状态
+                        
+                        drone_physical_status = next((drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
+                        print(f"drone_status:{drone_physical_status.drone_work_state}")
+
+                        if drone_physical_status.drone_work_state == DronePhysicalStatus.FLYING:
+                            print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机正在飞行。")
+                            break
+                        print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 等待无人机开始飞行。")
                     state = WorkState.RELEASE_CARGO
             elif state == WorkState.RELEASE_CARGO:
                 des_pos = Position(
