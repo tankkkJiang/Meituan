@@ -517,10 +517,14 @@ class DemoPipeline:
                     
                     if car_physical_status.car_work_state == CarPhysicalStatus.CAR_RUNNING:
                         print("小车已经进入running状态。")
-                        rospy.sleep(20)  # 等待一秒再检查小车状态，防止虚假running
-                        if car_physical_status.car_work_state == CarPhysicalStatus.CAR_RUNNING:
-                            print("过了20s仍然是running状态，确定正在运动。")
+                        car_physical_status = next(
+                            (car for car in self.car_physical_status if car.sn == car_sn), None)
+                        car_pos = car_physical_status.pos.position
+                        if not self.des_pos_reached(loading_pos, car_pos, 1):
+                            print("小车位置已经不在装载点，正在移动...")
                             break  # 小车已经开始运动，跳出循环
+                        else:
+                            print("虽然running状态但还未移动")
                     else:
                         print("小车未在运动状态，等待小车开始移动...")
                         rospy.sleep(1)  # 等待一秒再检查小车状态
@@ -570,7 +574,6 @@ class DemoPipeline:
                     # 等待并检查无人机的状态
                     while drone_physical_status.drone_work_state != DronePhysicalStatus.FLYING:
                         rospy.sleep(1)  # 每次检查前等待1秒
-                        time = time + 1
                         # 获取更新的无人机状态
                         drone_physical_status = next((drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                         print(f"car_sn:{car_sn},drone_sn:{drone_sn}, drone_physical_status.drone_work_state{drone_physical_status.drone_work_state}")
