@@ -564,11 +564,7 @@ class DemoPipeline:
                     self.fly_one_route(
                         drone_sn, route, 10.0, 60, WorkState.RELEASE_CARGO)
                     # 等待并检查无人机的状态
-                    time = 0
                     while drone_physical_status.drone_work_state != DronePhysicalStatus.FLYING:
-                        if time > 30:
-                            print(f"Timeout exceeded: Drone {drone_sn} did not start flying within {timeout} seconds.")
-                            break
                         rospy.sleep(1)  # 每次检查前等待1秒
                         time = time + 1
                         # 获取更新的无人机状态
