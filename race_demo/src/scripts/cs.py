@@ -515,15 +515,18 @@ class DemoPipeline:
                         rospy.sleep(1)  # 短暂等待后再次检查
                         continue
                     
-                    if car_physical_status.car_work_state != CarPhysicalStatus.CAR_RUNNING:
+                    if car_physical_status.car_work_state == CarPhysicalStatus.CAR_RUNNING:
+                        print("小车已经进入running状态。")
+                        rospy.sleep(2)  # 等待一秒再检查小车状态，防止虚假running
+                        if car_physical_status.car_work_state == CarPhysicalStatus.CAR_RUNNING:
+                            break  # 小车已经开始运动，跳出循环
+                    else:
                         print("小车未在运动状态，等待小车开始移动...")
                         rospy.sleep(1)  # 等待一秒再检查小车状态
-                    else:
-                        break  # 小车已经开始运动，跳出循环
 
                 while not car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
                     print("小车正在移动中...")
-                    rospy.sleep(1)  # 每秒检查一次位置
+                    rospy.sleep(1)  # 每秒检查一次位置不符合，有可能
                     car_physical_status = next(
                         (car for car in self.car_physical_status if car.sn == car_sn), None)
 
