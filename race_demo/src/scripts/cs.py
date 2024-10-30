@@ -442,6 +442,9 @@ class DemoPipeline:
                                 drone_sn, car_sn, 15, WorkState.MOVE_DRONE_ON_CAR)
                             drone_sn = drone_physical_status.sn
                             state = WorkState.MOVE_DRONE_ON_CAR
+                    elif drone_physical_status.bind_cargo_id:  # 额外检查，防止挂两个货物
+                        print(f"无人机{drone_sn}已绑定货物，跳过绑定步骤")
+                        state = WorkState.MOVE_CAR_TO_LEAVING_POINT
                     else:
                         print("车上有电量充足的无人机")
                         rospy.sleep(20)
@@ -555,13 +558,13 @@ class DemoPipeline:
                     self.fly_one_route(
                         drone_sn, route, 10.0, 60, WorkState.RELEASE_CARGO)
                     # 等待并检查无人机的状态
-                    timeout = 30  # Set your timeout in seconds
-                    start_time = time.time()  # Record the start time
+                    time = 0
                     while drone_physical_status.drone_work_state != DronePhysicalStatus.FLYING:
-                        if time.time() - start_time > timeout:
+                        if time > 30:
                             print(f"Timeout exceeded: Drone {drone_sn} did not start flying within {timeout} seconds.")
                             break
                         rospy.sleep(1)  # 每次检查前等待1秒
+                        time = time + 1
                         # 获取更新的无人机状态
                         drone_physical_status = next((drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                         print(f"car_sn:{car_sn},drone_sn:{drone_sn}, drone_physical_status.drone_work_state{drone_physical_status.drone_work_state}")
