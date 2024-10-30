@@ -580,6 +580,9 @@ class DemoPipeline:
                         elif drone_physical_status.drone_work_state == DronePhysicalStatus.LANDING:
                             print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机已经降落。")
                             break
+                        elif drone_physical_status.drone_work_state == DronePhysicalStatus.ERROR:
+                            print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机已经撞毁。")
+                            break
                         elif drone_physical_status.drone_work_state == DronePhysicalStatus.TAKEOFF:
                             print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机起飞中。")
                         print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 等待无人机开始飞行。")
