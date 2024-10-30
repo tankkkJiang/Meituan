@@ -517,9 +517,9 @@ class DemoPipeline:
                     
                     if car_physical_status.car_work_state == CarPhysicalStatus.CAR_RUNNING:
                         print("小车已经进入running状态。")
-                        rospy.sleep(3)  # 等待一秒再检查小车状态，防止虚假running
+                        rospy.sleep(20)  # 等待一秒再检查小车状态，防止虚假running
                         if car_physical_status.car_work_state == CarPhysicalStatus.CAR_RUNNING:
-                            print("过了3s仍然是running状态，确定正在运动。")
+                            print("过了20s仍然是running状态，确定正在运动。")
                             break  # 小车已经开始运动，跳出循环
                     else:
                         print("小车未在运动状态，等待小车开始移动...")
