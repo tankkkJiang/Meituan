@@ -111,7 +111,6 @@ class DemoPipeline:
         self.move_cargo_in_drone_millis = None  # 初始化挂餐时间，最后可以打印
         self.delivery_time_millis = None        # 初始化送达时间，最后可以打印
         self.waybill_start_time_millis = None
-        self.lock = threading.Lock()  # 初始化锁
 
     # 仿真回调函数，获取实时信息
     def panoramic_info_callback(self, panoramic_info):
@@ -149,7 +148,6 @@ class DemoPipeline:
         msg.car_route_info.yaw = 0.0
         self.cmd_pub.publish(msg)
         rospy.sleep(time_est)
-        print("move_car_with_start_and_end取消锁")
         
     # 检测位置到达的函数
     def des_pos_reached(self, des_pos, cur_pos, threshold):
@@ -330,23 +328,19 @@ class DemoPipeline:
     
     # 小车按照循环点移动
     def move_car_to_target_pos(self, car_list):
-        with self.lock:
-            print("小车开始循环移动，获得锁")
-            threads = []
-            # 创建所有线程
-            for car in car_list:
-                thread = threading.Thread(
-                    target=self.move_car, args=(car,)
-                )
-                threads.append(thread)
-            for thread in threads:  
-                thread.start()
-            # 等待所有线程完成
-            for thread in threads:
-                thread.join()
-            # print("小车位置初始化完成")
-            print("小车移动结束，归还锁")
-
+        threads = []
+        # 创建所有线程
+        for car in car_list:
+            thread = threading.Thread(
+                target=self.move_car, args=(car,)
+            )
+            threads.append(thread)
+        for thread in threads:  
+            thread.start()
+        # 等待所有线程完成
+        for thread in threads:
+            thread.join()
+        # print("小车位置初始化完成")
 
     def waybill_classification(self):  # 这里的订单分类只分最优的4个卸货点
         waybill_points = [
@@ -520,7 +514,7 @@ class DemoPipeline:
 
                 while not car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
                     print("小车正在移动中...")
-                    rospy.sleep(5)  # 每秒检查一次位置
+                    rospy.sleep(1)  # 每秒检查一次位置
                     car_physical_status = next(
                         (car for car in self.car_physical_status if car.sn == car_sn), None)
 
@@ -554,28 +548,22 @@ class DemoPipeline:
                     route = position_list + [end_pos]
                     # 计算总距离
                     total_distance = 0
-
-                    with self.lock:
-                        print(f"drone_sn:{drone_sn} 获取锁，进行起飞操作")
-                        for i in range(1, len(route)):
-                            total_distance += self.calculate_distance(route[i-1], route[i])
-                        # 无人机按照路径飞行
-                        cargo_start_time = rospy.Time.now()
-                        self.fly_one_route(
-                            drone_sn, route, 10.0, 60, WorkState.RELEASE_CARGO)
-                        print(f"")
-        
+                    for i in range(1, len(route)):
+                        total_distance += self.calculate_distance(route[i-1], route[i])
+                    # 无人机按照路径飞行
+                    cargo_start_time = rospy.Time.now()
+                    self.fly_one_route(
+                        drone_sn, route, 10.0, 60, WorkState.RELEASE_CARGO)
                     # 等待并检查无人机的状态
                     while drone_physical_status.drone_work_state != DronePhysicalStatus.FLYING:
                         rospy.sleep(1)  # 每次检查前等待1秒
                         # 获取更新的无人机状态
-                        
                         drone_physical_status = next((drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
-                        print(f"drone_status:{drone_physical_status.drone_work_state}")
-
                         if drone_physical_status.drone_work_state == DronePhysicalStatus.FLYING:
                             print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机正在飞行。")
                             break
+                        elif drone_physical_status.drone_work_state == DronePhysicalStatus.TAKEOFF:
+                            print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机起飞中。")
                         print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 等待无人机开始飞行。")
                     state = WorkState.RELEASE_CARGO
             elif state == WorkState.RELEASE_CARGO:
