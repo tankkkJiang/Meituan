@@ -112,6 +112,7 @@ class DemoPipeline:
         self.delivery_time_millis = None        # 初始化送达时间，最后可以打印
         self.waybill_start_time_millis = None
         self.drone_ready = threading.Condition()  # 创建一个条件变量对象，防止起飞时移动
+        self.initial_move_done = False            # 初始化标志，指示首次小车移动是否完成
 
     # 仿真回调函数，获取实时信息
     def panoramic_info_callback(self, panoramic_info):
@@ -140,7 +141,10 @@ class DemoPipeline:
     def move_car_with_start_and_end(self, car_sn, start, end, time_est, next_state):
         # 防止起飞时移动
         with self.drone_ready:
-            self.drone_ready.wait()  # 等待无人机起飞的信号
+            if not self.initial_move_done:
+                self.initial_move_done = True  # 标记首次移动完成
+            else:
+                self.drone_ready.wait()  # 在非首次移动时等待无人机起飞的信号
 
         # print("开始移动")
         msg = UserCmdRequest()
