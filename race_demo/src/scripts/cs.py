@@ -525,6 +525,10 @@ class DemoPipeline:
                             rospy.sleep(3)
                     else:
                         print("小车未在运动状态，等待小车开始移动...")
+                        if self.waybill_count ==1:
+                            rospy.sleep(10)
+                            self.move_car_to_target_pos(car_list)
+                            print("如果第一次，则重复运行一次循环点移动")
                         rospy.sleep(1)  # 等待一秒再检查小车状态
 
                 while not car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
