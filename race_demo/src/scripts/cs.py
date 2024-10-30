@@ -406,7 +406,7 @@ class DemoPipeline:
                 dispatching_start_time = rospy.Time.now() 
                 car_physical_status = next(
                     (car for car in self.car_physical_status if self.des_pos_reached(car.pos.position, loading_pos, 1) and car.car_work_state == CarPhysicalStatus.CAR_READY), None)
-                car_sn = car_physical_status.car_sn 
+                car_sn = car_physical_status.sn 
                 drone_sn = car_physical_status.drone_sn
                 # 挑选无人机
                 if drone_sn == '':
@@ -787,6 +787,6 @@ class DemoPipeline:
 
 
 if __name__ == '__main__':
-    print("tank111.py")
+    print("tank222.py")
     race_demo = DemoPipeline()
     race_demo.running()
