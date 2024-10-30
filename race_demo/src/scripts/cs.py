@@ -111,6 +111,7 @@ class DemoPipeline:
         self.move_cargo_in_drone_millis = None  # 初始化挂餐时间，最后可以打印
         self.delivery_time_millis = None        # 初始化送达时间，最后可以打印
         self.waybill_start_time_millis = None
+        self.lock = threading.Lock()
 
     # 仿真回调函数，获取实时信息
     def panoramic_info_callback(self, panoramic_info):
@@ -531,39 +532,41 @@ class DemoPipeline:
                 drone_pos = drone_physical_status.pos.position
                 # 判断无人机是否到达起飞地点
                 if (self.des_pos_reached(drone_pos, takeoff_pos, 1) and car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY):
-                    print(f"car_sn:{car_sn},drone_sn:{drone_sn}:准备放飞无人机")
-                    pre_time = (rospy.Time.now() - dispatching_start_time).to_sec()
-                    print(f"car_sn:{car_sn},drone_sn:{drone_sn}:前期准备工作花费的时间{pre_time}")
-                    start_pos = (drone_pos.x, drone_pos.y, flying_height)
-                    middle_pos = (
-                        waybill['targetPosition']['x'], waybill['targetPosition']['y'], flying_height)
-                    start_to_middle_route = navigate_with_astar(start_pos, middle_pos, step_size=5, threshold=5)
-                    print(f"car_sn:{car_sn},drone_sn:{drone_sn}:路线{start_to_middle_route}")
-                    # 将每个路径点转换为 Position 对象
-                    position_list = [Position(x, y, z) for (x, y, z) in start_to_middle_route]
-                    end_pos = Position(
-                        waybill['targetPosition']['x'],
-                        waybill['targetPosition']['y'],
-                        waybill['targetPosition']['z']-5)
-                    route = position_list + [end_pos]
-                    # 计算总距离
-                    total_distance = 0
-                    for i in range(1, len(route)):
-                        total_distance += self.calculate_distance(route[i-1], route[i])
-                    # 无人机按照路径飞行
-                    cargo_start_time = rospy.Time.now()
-                    self.fly_one_route(
-                        drone_sn, route, 10.0, 60, WorkState.RELEASE_CARGO)
-                    # 等待并检查无人机的状态
-                    while drone_physical_status.drone_work_state != DronePhysicalStatus.FLYING:
-                        rospy.sleep(1)  # 每次检查前等待1秒
-                        # 获取更新的无人机状态
-                        drone_physical_status = next((drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
-                        if drone_physical_status.drone_work_state == DronePhysicalStatus.FLYING:
-                            print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机正在飞行。")
-                            break
-                        print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 等待无人机开始飞行。")
-                    state = WorkState.RELEASE_CARGO
+                    with self.lock:
+                        print("获得锁，不会被干扰起飞过程，保证起飞。")
+                        print(f"car_sn:{car_sn},drone_sn:{drone_sn}:准备放飞无人机")
+                        pre_time = (rospy.Time.now() - dispatching_start_time).to_sec()
+                        print(f"car_sn:{car_sn},drone_sn:{drone_sn}:前期准备工作花费的时间{pre_time}")
+                        start_pos = (drone_pos.x, drone_pos.y, flying_height)
+                        middle_pos = (
+                            waybill['targetPosition']['x'], waybill['targetPosition']['y'], flying_height)
+                        start_to_middle_route = navigate_with_astar(start_pos, middle_pos, step_size=5, threshold=5)
+                        print(f"car_sn:{car_sn},drone_sn:{drone_sn}:路线{start_to_middle_route}")
+                        # 将每个路径点转换为 Position 对象
+                        position_list = [Position(x, y, z) for (x, y, z) in start_to_middle_route]
+                        end_pos = Position(
+                            waybill['targetPosition']['x'],
+                            waybill['targetPosition']['y'],
+                            waybill['targetPosition']['z']-5)
+                        route = position_list + [end_pos]
+                        # 计算总距离
+                        total_distance = 0
+                        for i in range(1, len(route)):
+                            total_distance += self.calculate_distance(route[i-1], route[i])
+                        # 无人机按照路径飞行
+                        cargo_start_time = rospy.Time.now()
+                        self.fly_one_route(
+                            drone_sn, route, 10.0, 60, WorkState.RELEASE_CARGO)
+                        # 等待并检查无人机的状态
+                        while drone_physical_status.drone_work_state != DronePhysicalStatus.FLYING:
+                            rospy.sleep(1)  # 每次检查前等待1秒
+                            # 获取更新的无人机状态
+                            drone_physical_status = next((drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
+                            if drone_physical_status.drone_work_state == DronePhysicalStatus.FLYING:
+                                print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机正在飞行。")
+                                break
+                            print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 等待无人机开始飞行。")
+                        state = WorkState.RELEASE_CARGO
             elif state == WorkState.RELEASE_CARGO:
                 des_pos = Position(
                     waybill['targetPosition']['x'],
@@ -590,7 +593,7 @@ class DemoPipeline:
                     rospy.sleep(waiting_time_1)
                     # waiting_time_2 = waiting_time_1
                     # rospy.sleep(waiting_time_2)
-                    
+
                     # print(f"car_sn:{car_sn},drone_sn:{drone_sn}:飞机送货耗时: {cargo_time} 秒")
                     # print(f"car_sn:{car_sn},drone_sn:{drone_sn}:总距离: {total_distance:.2f},速度: {speed}")
                     # print(f"car_sn:{car_sn},drone_sn:{drone_sn}:送货等待{waiting_time_1}秒")
