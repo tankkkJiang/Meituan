@@ -399,6 +399,10 @@ class DemoPipeline:
         self.waybill_start_time_millis = get_millis()
         print("Begin to dispatch, self.waybill_start_time_millis:", self.waybill_start_time_millis)
         self.waybill_count += 1
+        if self.waybill_count == 1:
+            print("第一单休息10s")
+            rospy(10)
+            # 刚开始初始化时间长，防止挂两单
         while not rospy.is_shutdown():
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
                 # 挑选小车
@@ -413,8 +417,9 @@ class DemoPipeline:
                     print(f"{car_sn}挑选无人机")
                     # 遍历无人机列表，挑选状态为 READY 且在出生地点的无人机
                     drone_physical_status = next(
-                        (drone for drone in self.drone_physical_status if drone.drone_work_state == DronePhysicalStatus.READY and self.des_pos_reached(birth_pos, drone.pos.position, 0.5) and drone.remaining_capacity >= 30), None)
+                        (drone for drone in self.drone_physical_status if drone.drone_work_state == DronePhysicalStatus.READY and self.des_pos_reached(birth_pos, drone.pos.position, 0.5) and drone.remaining_capacity >= 30) and not drone_physical_status.bind_cargo_id, None)
                     # 如果没有找到符合条件的无人机，直接返回 None
+                    # 添加条件，不得悬挂
                     if drone_physical_status is None:
                         print(f"{car_sn}没有找到合适的无人机")
                         rospy.sleep(35)
