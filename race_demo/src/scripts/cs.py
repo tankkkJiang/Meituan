@@ -588,8 +588,9 @@ class DemoPipeline:
                     print(f"外卖送达 - car_sn:{car_sn},drone_sn:{drone_sn}:外卖送{bill_state}啦！！！！！")
                     waiting_time_1 = round(162.75-cargo_time, 1)
                     rospy.sleep(waiting_time_1)
-                    waiting_time_2 = waiting_time_1
-                    rospy.sleep(waiting_time_2)
+                    # waiting_time_2 = waiting_time_1
+                    # rospy.sleep(waiting_time_2)
+                    
                     # print(f"car_sn:{car_sn},drone_sn:{drone_sn}:飞机送货耗时: {cargo_time} 秒")
                     # print(f"car_sn:{car_sn},drone_sn:{drone_sn}:总距离: {total_distance:.2f},速度: {speed}")
                     # print(f"car_sn:{car_sn},drone_sn:{drone_sn}:送货等待{waiting_time_1}秒")
