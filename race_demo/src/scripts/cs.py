@@ -143,7 +143,9 @@ class DemoPipeline:
         with self.drone_ready:
             if not self.initial_move_done:
                 self.initial_move_done = True  # 标记首次移动完成
+                print(f"首次移动小车 {car_sn}，不等待无人机起飞信号。")
             else:
+                print(f"等待无人机起飞信号后，再次移动小车 {car_sn} 。")
                 self.drone_ready.wait()  # 在非首次移动时等待无人机起飞的信号
 
         # print("开始移动")
@@ -217,15 +219,9 @@ class DemoPipeline:
 
         # 防止起飞时移动
         with self.drone_ready:
+            print(f"无人机 {drone_sn} 已起飞，发送起飞完成信号。")
             self.drone_ready.notify_all()  # 唤醒所有等待无人机起飞的线程
 
-        state = next_state
-
-        self.cmd_pub.publish(msg)
-        rospy.sleep(time_est)
-        
-        with self.drone_ready:
-            self.drone_ready.notify_all()  # 唤醒所有等待无人机起飞的线程
         state = next_state
 
     # 抛餐函数
