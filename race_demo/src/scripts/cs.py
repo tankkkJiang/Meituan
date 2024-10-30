@@ -401,7 +401,7 @@ class DemoPipeline:
         self.waybill_count += 1
         if self.waybill_count == 1:
             print("第一单休息10s")
-            rospy(10)
+            rospy.sleep(10)
             # 刚开始初始化时间长，防止挂两单
         while not rospy.is_shutdown():
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
