@@ -111,8 +111,6 @@ class DemoPipeline:
         self.move_cargo_in_drone_millis = None  # 初始化挂餐时间，最后可以打印
         self.delivery_time_millis = None        # 初始化送达时间，最后可以打印
         self.waybill_start_time_millis = None
-        self.drone_ready = threading.Condition()  # 创建一个条件变量对象，防止起飞时移动
-        self.initial_move_done = False            # 初始化标志，指示首次小车移动是否完成
 
     # 仿真回调函数，获取实时信息
     def panoramic_info_callback(self, panoramic_info):
@@ -139,15 +137,6 @@ class DemoPipeline:
 
     # 移动地面车辆的函数
     def move_car_with_start_and_end(self, car_sn, start, end, time_est, next_state):
-        # 防止起飞时移动
-        with self.drone_ready:
-            if not self.initial_move_done:
-                self.initial_move_done = True  # 标记首次移动完成
-                print(f"首次移动小车 {car_sn}，不等待无人机起飞信号。")
-            else:
-                print(f"等待无人机起飞信号后，再次移动小车 {car_sn} 。")
-                self.drone_ready.wait()  # 在非首次移动时等待无人机起飞的信号
-
         # print("开始移动")
         msg = UserCmdRequest()
         msg.peer_id = self.peer_id
@@ -216,12 +205,6 @@ class DemoPipeline:
         msg.drone_way_point_info.way_point.append(land_point)
         self.cmd_pub.publish(msg)
         rospy.sleep(time_est)
-
-        # 防止起飞时移动
-        with self.drone_ready:
-            print(f"无人机 {drone_sn} 已起飞，发送起飞完成信号。")
-            self.drone_ready.notify_all()  # 唤醒所有等待无人机起飞的线程
-
         state = next_state
 
     # 抛餐函数
@@ -430,7 +413,7 @@ class DemoPipeline:
                     print(f"{car_sn}挑选无人机")
                     # 遍历无人机列表，挑选状态为 READY 且在出生地点的无人机
                     drone_physical_status = next(
-                        (drone for drone in self.drone_physical_status if drone.drone_work_state == DronePhysicalStatus.READY and self.des_pos_reached(birth_pos, drone.pos.position, 0.5) and drone.remaining_capacity >= 26), None)
+                        (drone for drone in self.drone_physical_status if drone.drone_work_state == DronePhysicalStatus.READY and self.des_pos_reached(birth_pos, drone.pos.position, 0.5) and drone.remaining_capacity >= 30), None)
                     # 如果没有找到符合条件的无人机，直接返回 None
                     if drone_physical_status is None:
                         print(f"{car_sn}没有找到合适的无人机")
@@ -444,11 +427,11 @@ class DemoPipeline:
                 else:
                     drone_physical_status = next(
                         (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
-                    if drone_physical_status.remaining_capacity < 26:
+                    if drone_physical_status.remaining_capacity < 30:
                         print("电量不足")
                         # 挑选无人机，其状态是ready且在出生地点,电量充足
                         drone_physical_status = next(
-                            (drone for drone in self.drone_physical_status if drone.drone_work_state == DronePhysicalStatus.READY and self.des_pos_reached(birth_pos, drone.pos.position, 0.5) and drone.remaining_capacity >= 26), None)
+                            (drone for drone in self.drone_physical_status if drone.drone_work_state == DronePhysicalStatus.READY and self.des_pos_reached(birth_pos, drone.pos.position, 0.5) and drone.remaining_capacity >= 30), None)
                         if drone_physical_status is None:
                             print("其他合适的无人机也没电了")
                             rospy.sleep(15)
