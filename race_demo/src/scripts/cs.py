@@ -579,7 +579,7 @@ class DemoPipeline:
                         drone_sn, route, 10.0, 60, WorkState.RELEASE_CARGO)
                     # 等待并检查无人机的状态
                     while drone_physical_status.drone_work_state != DronePhysicalStatus.FLYING:
-                        rospy.sleep(1)  # 每次检查前等待1秒
+                        rospy.sleep(0.1)  # 每次检查前等待0.1秒
                         # 获取更新的无人机状态
                         drone_physical_status = next((drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                         print(f"car_sn:{car_sn},drone_sn:{drone_sn}, drone_physical_status.drone_work_state{drone_physical_status.drone_work_state}")
@@ -594,6 +594,7 @@ class DemoPipeline:
                             break
                         elif drone_physical_status.drone_work_state == DronePhysicalStatus.TAKEOFF:
                             print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机起飞中。")
+                            break
                         print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 等待无人机开始飞行。")
                     # 释放信号量，通知前一单的无人机已经成功起飞
                     self.drone_takeoff_semaphore.release()
