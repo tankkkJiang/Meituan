@@ -105,8 +105,8 @@ class DemoPipeline:
         self.waybill_start_time_millis = None
         self.order_semaphore = threading.Semaphore(0)  # 初始不可用
         self.drone_takeoff_semaphore = threading.Semaphore(0)  # 初始化信号量为 0，表示当前不可用
-        self.lock = threading.Lock()                   # 用于保护共享资源的锁
-        self.landing_lock = threading.Lock()           # 初始化一个线程锁
+        self.lock = threading.Lock()                     # 用于保护共享资源的锁
+        self.landing_semaphore = threading.Semaphore(1)  # 初始值为1，表示允许小车移动
 
     # 仿真回调函数，获取实时信息
     def panoramic_info_callback(self, panoramic_info):
@@ -507,44 +507,53 @@ class DemoPipeline:
                 # 小车搭载挂外卖的无人机到达起飞点
                 # car_start_time = rospy.Time.now()
 
-                # 小车搭载挂外卖的无人机到达起飞点
-                self.move_car_to_target_pos(car_list)
-                timeout = 0
+                # 在移动前获取降落信号量
+                self.landing_semaphore.acquire()
+                try:
+                    print(f"car_sn:{car_sn}获取信号量，开始运动")
+                    # 小车搭载挂外卖的无人机到达起飞点
+                    self.move_car_to_target_pos(car_list)
+                    timeout = 0
 
-                # 检查小车是否处于运动状态
-                while True:
-                    timeout += 1
-                    if timeout > 10:
-                        self.move_car_to_target_pos(car_list)
-                    car_physical_status = next(
-                        (car for car in self.car_physical_status if car.sn == car_sn), None)
-                    if car_physical_status is None:
-                        print("未找到对应的小车状态信息")
-                        rospy.sleep(1)  # 短暂等待后再次检查
-                        continue
-                    
-                    if car_physical_status.car_work_state == CarPhysicalStatus.CAR_RUNNING:
-                        print("小车已经进入running状态。")
+                    # 检查小车是否处于运动状态
+                    while True:
+                        timeout += 1
+                        if timeout > 10:
+                            self.move_car_to_target_pos(car_list)
                         car_physical_status = next(
                             (car for car in self.car_physical_status if car.sn == car_sn), None)
-                        car_pos = car_physical_status.pos.position
-                        if not self.des_pos_reached(loading_pos, car_pos, 1):
-                            print("小车位置已经不在装载点，正在移动...")
-                            break  # 小车已经开始运动，跳出循环
+                        if car_physical_status is None:
+                            print("未找到对应的小车状态信息")
+                            rospy.sleep(1)  # 短暂等待后再次检查
+                            continue
+                        
+                        if car_physical_status.car_work_state == CarPhysicalStatus.CAR_RUNNING:
+                            print(f"car_sn:{car_sn}小车已经进入running状态。")
+                            car_physical_status = next(
+                                (car for car in self.car_physical_status if car.sn == car_sn), None)
+                            car_pos = car_physical_status.pos.position
+                            if not self.des_pos_reached(loading_pos, car_pos, 1):
+                                print("小车位置已经不在装载点，正在移动...")
+                                break  # 小车已经开始运动，跳出循环
+                            else:
+                                # print("虽然running状态但还未移动")
+                                rospy.sleep(3)
                         else:
-                            # print("虽然running状态但还未移动")
-                            rospy.sleep(3)
-                    else:
-                        print("小车未在运动状态，等待小车开始移动...")
-                        rospy.sleep(1)  # 等待一秒再检查小车状态
+                            print("小车未在运动状态，等待小车开始移动...")
+                            rospy.sleep(1)  # 等待一秒再检查小车状态
 
-                while not car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
-                    print("小车正在移动中...")
-                    rospy.sleep(1)  # 每秒检查一次位置不符合，有可能
-                    car_physical_status = next(
-                        (car for car in self.car_physical_status if car.sn == car_sn), None)
+                    while not car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
+                        print(f"car_sn:{car_sn}小车正在移动中...")
+                        rospy.sleep(1)  # 每秒检查一次位置不符合，有可能
+                        car_physical_status = next(
+                            (car for car in self.car_physical_status if car.sn == car_sn), None)
 
-                print("小车移动完毕")
+                    print("小车移动完毕")
+                finally:
+                    # 完成移动后释放信号量
+                    self.landing_semaphore.release()
+                    print("小车位置初始化完成，允许其他线程继续。")
+
                 start_to_move_finish_time = (rospy.Time.now() - dispatching_start_time).to_sec()
                 print(f"car_sn:{car_sn},drone_sn:{drone_sn}:从订单开始到移车结束: {start_to_move_finish_time}")
                 self.order_semaphore.release()  # 释放信号量，允许第二单开始
@@ -637,6 +646,10 @@ class DemoPipeline:
                 drone_physical_status = next(
                     (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                 drone_pos = drone_physical_status.pos.position
+                if self.des_pos_reached(end_pos_1, drone_pos, 0.5):
+                    # 在降落开始时获取信号量，阻止其他小车移动
+                    self.landing_semaphore.acquire()
+                    print(f"无人机开始降落，禁止其他小车移动。")
                 if self.des_pos_reached(end_pos_2, drone_pos, 0.5):
                     back_time = (rospy.Time.now() - back_start_time).to_sec()
                     if flag:
@@ -662,6 +675,9 @@ class DemoPipeline:
                     print(f"最佳送达时间 betterTime: {waybill['betterTime']} - 毫秒戳")
                     print(f"超时时间 timeout: {waybill['timeout']} - 毫秒戳")
                     print(f"总订单量{self.waybill_count }，当前的分数{self.score}")
+                    print("无人机降落完成，允许小车继续移动。")
+                    # 无人机降落完成后释放信号量
+                    self.landing_semaphore.release()
                     print("********************")
                     # print(f"看看当前事件是啥{self.events}")
                     break
