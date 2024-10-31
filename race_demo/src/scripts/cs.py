@@ -504,10 +504,21 @@ class DemoPipeline:
                 if self.waybill_count > 1:
                     print(f"car_sn:{car_sn}:等待前一单无人机起飞...")
                     self.drone_takeoff_semaphore.acquire()  # 阻塞，直到无人机成功起飞
-                print(f"car_sn:{car_sn},drone_sn:{drone_sn}:移动小车")
                 # 小车搭载挂外卖的无人机到达起飞点
                 # car_start_time = rospy.Time.now()
-                self.move_car_to_target_pos(car_list)
+                self.landing_lock.acquire()  # 阻塞，直到锁被释放
+                try:
+                    print(f"car_sn:{car_sn},drone_sn:{drone_sn}:获得锁，期间不会降落；开始移动小车")
+                    # 小车搭载挂外卖的无人机到达起飞点
+                    self.move_car_to_target_pos(car_list)
+                finally:
+                    # 移动完成后释放锁
+                    print("小车移动释放锁")
+                    self.lock.release()
+                if self.waybill_count ==1:
+                    rospy.sleep(1)
+                    self.move_car_to_target_pos(car_list)
+                    print("如果第一次，则重复运行一次循环点移动")
 
                 # 检查小车是否处于运动状态
                 while True:
@@ -531,10 +542,6 @@ class DemoPipeline:
                             rospy.sleep(3)
                     else:
                         print("小车未在运动状态，等待小车开始移动...")
-                        if self.waybill_count ==1:
-                            rospy.sleep(5)
-                            self.move_car_to_target_pos(car_list)
-                            print("如果第一次，则重复运行一次循环点移动")
                         rospy.sleep(1)  # 等待一秒再检查小车状态
 
                 while not car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
@@ -637,33 +644,39 @@ class DemoPipeline:
                     (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                 drone_pos = drone_physical_status.pos.position
                 if self.des_pos_reached(end_pos_2, drone_pos, 0.5):
-                    back_time = (rospy.Time.now() - back_start_time).to_sec()
-                    if flag:
-                        print(f"car_sn:{car_sn},drone_sn:{drone_sn}:飞机返回耗时: {back_time}秒")
-                        flag = False
-                if self.des_pos_reached(landing_pos, drone_pos, 2) and drone_physical_status.drone_work_state == DronePhysicalStatus.READY:
-                    back_land_time = (rospy.Time.now() - back_start_time).to_sec()
-                    print("********************")
-                    print("以下打印无人机降落后信息")
-                    print(f"car_sn:{car_sn},drone_sn:{drone_sn}:waybill_cargo_id:{bind_cargo_id},loading_pos:{loading_pos}, takeoff_pos:{takeoff_pos}, landing_pos:{landing_pos},flying_height:{flying_height}")
-                    print(f"外卖送{bill_state}啦！！！！！")
-                    print(f"前期准备工作花费的时间{pre_time}")
-                    print(f"飞机送货耗时: {cargo_time} 秒")
-                    print(f"总距离: {total_distance:.2f}")
-                    print(f"送货等待{waiting_time_1}秒")
-                    print(f"返航等待{waiting_time_2}秒")
-                    print(f"飞机返回耗时: {back_time}秒")
-                    print(f"飞机返回着陆耗时: {back_land_time}秒")
-                    print(f"飞机着陆耗时: {back_land_time-back_time}秒")
-                    print(f"来回的差值{back_land_time-cargo_time}")
-                    print(f"编号Waybill ID: {waybill['index']}")
-                    print(f"订单时间 orderTime: {waybill['orderTime']} - 毫秒戳")
-                    print(f"最佳送达时间 betterTime: {waybill['betterTime']} - 毫秒戳")
-                    print(f"超时时间 timeout: {waybill['timeout']} - 毫秒戳")
-                    print(f"总订单量{self.waybill_count }，当前的分数{self.score}")
-                    print("********************")
-                    # print(f"看看当前事件是啥{self.events}")
-                    break
+                    self.landing_lock.acquire()
+                    try:
+                        back_time = (rospy.Time.now() - back_start_time).to_sec()
+                        if flag:
+                            print(f"car_sn:{car_sn},drone_sn:{drone_sn}:飞机返回耗时: {back_time}秒")
+                            flag = False
+                        if self.des_pos_reached(landing_pos, drone_pos, 2) and drone_physical_status.drone_work_state == DronePhysicalStatus.READY:
+                            back_land_time = (rospy.Time.now() - back_start_time).to_sec()
+                            print("********************")
+                            print("以下打印无人机降落后信息")
+                            print(f"car_sn:{car_sn},drone_sn:{drone_sn}:waybill_cargo_id:{bind_cargo_id},loading_pos:{loading_pos}, takeoff_pos:{takeoff_pos}, landing_pos:{landing_pos},flying_height:{flying_height}")
+                            print(f"外卖送{bill_state}啦！！！！！")
+                            print(f"前期准备工作花费的时间{pre_time}")
+                            print(f"飞机送货耗时: {cargo_time} 秒")
+                            print(f"总距离: {total_distance:.2f}")
+                            print(f"送货等待{waiting_time_1}秒")
+                            print(f"返航等待{waiting_time_2}秒")
+                            print(f"飞机返回耗时: {back_time}秒")
+                            print(f"飞机返回着陆耗时: {back_land_time}秒")
+                            print(f"飞机着陆耗时: {back_land_time-back_time}秒")
+                            print(f"来回的差值{back_land_time-cargo_time}")
+                            print(f"编号Waybill ID: {waybill['index']}")
+                            print(f"订单时间 orderTime: {waybill['orderTime']} - 毫秒戳")
+                            print(f"最佳送达时间 betterTime: {waybill['betterTime']} - 毫秒戳")
+                            print(f"超时时间 timeout: {waybill['timeout']} - 毫秒戳")
+                            print(f"总订单量{self.waybill_count }，当前的分数{self.score}")
+                            print("********************")
+                            # print(f"看看当前事件是啥{self.events}")
+                            break
+                    finally:
+                        # 打印结束后释放锁，允许其他线程继续执行
+                        print("降落锁已释放")
+                        self.landing_lock.release()
                         
     # 状态流转主函数
     def running(self):
