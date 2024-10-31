@@ -509,13 +509,13 @@ class DemoPipeline:
 
                 # 小车搭载挂外卖的无人机到达起飞点
                 self.move_car_to_target_pos(car_list)
-                if self.waybill_count ==1:
-                    rospy.sleep(1)
-                    self.move_car_to_target_pos(car_list)
-                    print("如果第一次，则重复运行一次循环点移动")
+                timeout = 0
 
                 # 检查小车是否处于运动状态
                 while True:
+                    timeout += 1
+                    if timeout > 10:
+                        self.move_car_to_target_pos(car_list)
                     car_physical_status = next(
                         (car for car in self.car_physical_status if car.sn == car_sn), None)
                     if car_physical_status is None:
