@@ -396,10 +396,15 @@ class DemoPipeline:
                 if self.waybill_count > 1:
                     print("正在等待前一单完成...")
                     self.order_semaphore.acquire()  # 阻塞，等待前一单完成并释放信号量
-                print(f"订单数{self.waybill_count}：小车无人机初始化")
+                print(f"订单数{self.waybill_count}：小车无人机开始进行初始化")
                 dispatching_start_time = rospy.Time.now()
-                car_physical_status = next(
-                    (car for car in self.car_physical_status if self.des_pos_reached(car.pos.position, loading_pos, 1) and car.car_work_state == CarPhysicalStatus.CAR_READY), None)
+                while True:
+                    car_physical_status = next(
+                        (car for car in self.car_physical_status if self.des_pos_reached(car.pos.position, loading_pos, 1) and car.car_work_state == CarPhysicalStatus.CAR_READY), None)
+                    if car_physical_status is not None:
+                        print("找到小车")
+                        break
+                    rospy.sleep(5)
                 car_sn = car_physical_status.sn 
                 drone_sn = car_physical_status.drone_sn
                 # 挑选无人机
