@@ -672,6 +672,9 @@ class DemoPipeline:
     # 状态流转主函数
     def running(self):
         print("开始运行")
+        while self.car_physical_status is None:
+            print("等待小车状态初始化...")
+            rospy.sleep(1.0)  # 等待 1 秒钟再检查
         running_start_time = rospy.get_time()  # 使用 rospy 获取当前时间
         print(f"running start_time:{running_start_time}")
         # 循环运行，直到达到 3600 秒
