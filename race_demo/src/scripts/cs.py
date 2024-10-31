@@ -483,7 +483,7 @@ class DemoPipeline:
                 # 从订单信息waybill中提取对应的外卖ID
                 cargo_id = waybill['cargoParam']['index']
                 self.move_cargo_in_drone(cargo_id, drone_sn, 15.0)
-                drone_physical_status = drone_physical_status = next(
+                drone_physical_status = next(
                     (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                 bind_cargo_id = drone_physical_status.bind_cargo_id
                 print(f"car_sn:{car_sn},drone_sn:{drone_sn}:外卖订单bind_cargo_id{bind_cargo_id}")
@@ -546,7 +546,7 @@ class DemoPipeline:
                 if (self.des_pos_reached(drone_pos, takeoff_pos, 1) and car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY):
                     print(f"car_sn:{car_sn},drone_sn:{drone_sn}:准备放飞无人机")
                     pre_time = (rospy.Time.now() - dispatching_start_time).to_sec()
-                    print(f"car_sn:{car_sn},drone_sn:{drone_sn}:前期准备工作花费的时间{pre_time}")
+                    print(f"car_sn:{car_sn},drone_sn:{drone_sn}:前期准备工作（到放飞无人机）花费的时间{pre_time}")
                     start_pos = (drone_pos.x, drone_pos.y, flying_height)
                     middle_pos = (
                         waybill['targetPosition']['x'], waybill['targetPosition']['y'], flying_height)
@@ -688,7 +688,7 @@ class DemoPipeline:
                 print("所有小车都已准备好。")
                 break
             else:
-                rospy.sleep(5.0)
+                rospy.sleep(3)
                 print("还有小车未准备好。")
 
         print(self.state)
@@ -743,19 +743,10 @@ class DemoPipeline:
         # 等待所有线程完成
         for thread in threads:
             thread.join()
-        rospy.sleep(30)
-        print("初始化完成")
-
-        # 确保在循环开始前子列表已经按照betterTime排序
+        rospy.sleep(5)
+        print("用时5s初始化完成")
+        # 确保在循环开始前子列表已经按照betterTime+timeout排序
         groups = self.waybill_classification()
-        # # 打印排序后的结果
-        # for index, group in enumerate(groups):
-        #     print(f"分组 {index+1}:")  # 打印当前分组的序号
-        #     for item in group:
-        #         print(item)  # 打印分组内的每个元素
-
-        # groups = self.group_waybills(self.waybill_infos, takeoff_pos)
-        # 创建每个子列表的迭代器
         iterators = [iter(group) for group in groups]
         # # 循环提取每个子列表的一个元素，直到所有子列表都为空
         flying_height_list = [-86, -92, -98]
