@@ -596,6 +596,7 @@ class DemoPipeline:
                 drone_pos = drone_physical_status.pos.position
                 # 释放货物
                 if (self.des_pos_reached(des_pos, drone_pos, 2) and drone_physical_status.drone_work_state ==  DronePhysicalStatus.READY):
+                    # 记录起飞后到送货物时间
                     cargo_time = (rospy.Time.now() - takeoff_time).to_sec()
                     speed = total_distance/cargo_time
                     self.release_cargo(
@@ -604,7 +605,7 @@ class DemoPipeline:
                     bill_state = "成功"
                     # print("********************")
                     # print("以下打印外卖送达后信息")
-                    print(f"外卖送达 - car_sn:{car_sn},drone_sn:{drone_sn}:外卖送{bill_state}啦！！！！！")
+                    print(f"外卖送达 - car_sn:{car_sn},drone_sn:{drone_sn}:外卖送{bill_state}啦！！！！！cargo-time用时:{cargo_time}")
                     waiting_time_1 = round(100 - cargo_time, 1)
                     rospy.sleep(waiting_time_1)
                     waiting_time_2 = waiting_time_1
