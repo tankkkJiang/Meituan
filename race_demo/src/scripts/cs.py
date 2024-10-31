@@ -667,9 +667,7 @@ class DemoPipeline:
     # 状态流转主函数
     def running(self):
         print("开始运行")
-        rospy.sleep(30.0)
         running_start_time = rospy.get_time()  # 使用 rospy 获取当前时间
-        running_start_time_ms = running_start_time * 1000
         print(f"running start_time:{running_start_time}")
         # 循环运行，直到达到 3600 秒
         while not rospy.is_shutdown():
@@ -743,8 +741,8 @@ class DemoPipeline:
         # 等待所有线程完成
         for thread in threads:
             thread.join()
-        rospy.sleep(5)
-        print("用时5s初始化完成")
+        rospy.sleep(20)
+        print("用时20s初始化完成")
         # 确保在循环开始前子列表已经按照betterTime+timeout排序
         groups = self.waybill_classification()
         iterators = [iter(group) for group in groups]
