@@ -540,13 +540,12 @@ class DemoPipeline:
                         print("小车未在运动状态，等待小车开始移动...")
                         rospy.sleep(1)  # 等待一秒再检查小车状态
 
-                    while not car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
-                        print(f"car_sn:{car_sn}小车正在移动中...")
-                        rospy.sleep(1)  # 每秒检查一次位置不符合，有可能
-                        car_physical_status = next(
-                            (car for car in self.car_physical_status if car.sn == car_sn), None)
-
-                    print("小车移动完毕")
+                while not car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
+                    print(f"car_sn:{car_sn}小车正在移动中...")
+                    rospy.sleep(1)  # 每秒检查一次位置不符合，有可能
+                    car_physical_status = next(
+                        (car for car in self.car_physical_status if car.sn == car_sn), None)
+                print("小车移动完毕")
 
                 start_to_move_finish_time = (rospy.Time.now() - dispatching_start_time).to_sec()
                 print(f"car_sn:{car_sn},drone_sn:{drone_sn}:从订单开始到移车结束: {start_to_move_finish_time}")
