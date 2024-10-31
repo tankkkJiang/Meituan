@@ -514,7 +514,7 @@ class DemoPipeline:
                 finally:
                     # 移动完成后释放锁
                     print("小车移动释放锁")
-                    self.lock.release()
+                    self.landing_lock.release()
                 if self.waybill_count ==1:
                     rospy.sleep(1)
                     self.move_car_to_target_pos(car_list)
