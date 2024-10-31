@@ -106,6 +106,7 @@ class DemoPipeline:
         self.order_semaphore = threading.Semaphore(0)  # 初始不可用
         self.drone_takeoff_semaphore = threading.Semaphore(0)  # 初始化信号量为 0，表示当前不可用
         self.lock = threading.Lock()                   # 用于保护共享资源的锁
+        self.landing_lock = threading.Lock()           # 初始化一个线程锁
 
     # 仿真回调函数，获取实时信息
     def panoramic_info_callback(self, panoramic_info):
@@ -199,8 +200,12 @@ class DemoPipeline:
         land_point.timeoutsec = 1000
         msg.drone_way_point_info.way_point.append(land_point)
         self.cmd_pub.publish(msg)
+        rospy.sleep(3)
+        # 释放信号量，通知前一单的无人机已经成功起飞
+        self.drone_takeoff_semaphore.release()
+        print(f"drone_sn:{drone_sn}:无人机已起飞，允许后续车辆开始移动。")
         rospy.sleep(time_est)
-        state = next_state
+        # state = next_state
 
     # 抛餐函数
     def release_cargo(self, drone_sn, time_est, next_state):
@@ -527,7 +532,7 @@ class DemoPipeline:
                     else:
                         print("小车未在运动状态，等待小车开始移动...")
                         if self.waybill_count ==1:
-                            rospy.sleep(10)
+                            rospy.sleep(5)
                             self.move_car_to_target_pos(car_list)
                             print("如果第一次，则重复运行一次循环点移动")
                         rospy.sleep(1)  # 等待一秒再检查小车状态
@@ -582,7 +587,6 @@ class DemoPipeline:
                         rospy.sleep(0.1)  # 每次检查前等待0.1秒
                         # 获取更新的无人机状态
                         drone_physical_status = next((drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
-                        print(f"car_sn:{car_sn},drone_sn:{drone_sn}, drone_physical_status.drone_work_state{drone_physical_status.drone_work_state}")
                         if drone_physical_status.drone_work_state == DronePhysicalStatus.FLYING:
                             print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机正在飞行。")
                             break
@@ -595,7 +599,6 @@ class DemoPipeline:
                         elif drone_physical_status.drone_work_state == DronePhysicalStatus.TAKEOFF:
                             print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机起飞中。")
                             break
-                        print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 等待无人机开始飞行。")
                     # 释放信号量，通知前一单的无人机已经成功起飞
                     self.drone_takeoff_semaphore.release()
                     print(f"car_sn:{car_sn},drone_sn:{drone_sn}:无人机已起飞，允许后续车辆开始移动。")
