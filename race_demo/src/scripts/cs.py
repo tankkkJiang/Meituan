@@ -605,7 +605,7 @@ class DemoPipeline:
                     # print("********************")
                     # print("以下打印外卖送达后信息")
                     print(f"外卖送达 - car_sn:{car_sn},drone_sn:{drone_sn}:外卖送{bill_state}啦！！！！！")
-                    waiting_time_1 = round(95-cargo_time, 1)
+                    waiting_time_1 = round(100 - cargo_time, 1)
                     rospy.sleep(waiting_time_1)
                     waiting_time_2 = waiting_time_1
                     rospy.sleep(waiting_time_2)
@@ -782,7 +782,7 @@ class DemoPipeline:
                     )
                     threads.append(thread)
                     thread.start()
-                    rospy.sleep(50)     # 每多少秒周期提取并处理一单订单
+                    rospy.sleep(35)     # 每多少秒周期提取并处理一单订单
                 except StopIteration:
                     # 如果迭代器已经耗尽，从列表中移除
                     iterators.remove(it)
