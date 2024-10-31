@@ -582,26 +582,6 @@ class DemoPipeline:
                     cargo_start_time = rospy.Time.now()
                     self.fly_one_route(
                         drone_sn, route, 10.0, 60, WorkState.RELEASE_CARGO)
-                    # 等待并检查无人机的状态
-                    while drone_physical_status.drone_work_state != DronePhysicalStatus.FLYING:
-                        rospy.sleep(0.1)  # 每次检查前等待0.1秒
-                        # 获取更新的无人机状态
-                        drone_physical_status = next((drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
-                        if drone_physical_status.drone_work_state == DronePhysicalStatus.FLYING:
-                            print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机正在飞行。")
-                            break
-                        elif drone_physical_status.drone_work_state == DronePhysicalStatus.LANDING:
-                            print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机已经降落。")
-                            break
-                        elif drone_physical_status.drone_work_state == DronePhysicalStatus.ERROR:
-                            print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机已经撞毁。")
-                            break
-                        elif drone_physical_status.drone_work_state == DronePhysicalStatus.TAKEOFF:
-                            print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机起飞中。")
-                            break
-                    # 释放信号量，通知前一单的无人机已经成功起飞
-                    self.drone_takeoff_semaphore.release()
-                    print(f"car_sn:{car_sn},drone_sn:{drone_sn}:无人机已起飞，允许后续车辆开始移动。")
                     state = WorkState.RELEASE_CARGO
             elif state == WorkState.RELEASE_CARGO:
                 des_pos = Position(
