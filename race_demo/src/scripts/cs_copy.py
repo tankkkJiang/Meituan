@@ -327,20 +327,21 @@ class DemoPipeline:
     
     # 小车按照循环点移动
     def move_car_to_target_pos(self, car_list):
-        print("正在调用循环小车移动")
-        threads = []
-        # 创建所有线程
-        for car in car_list:
-            thread = threading.Thread(
-                target=self.move_car, args=(car,)
-            )
-            threads.append(thread)
-        for thread in threads:  
-            thread.start()
-        # 等待所有线程完成
-        for thread in threads:
-            thread.join()
-        # print("小车位置初始化完成")
+        with self.lock:
+            print("正在调用循环小车移动")
+            threads = []
+            # 创建所有线程
+            for car in car_list:
+                thread = threading.Thread(
+                    target=self.move_car, args=(car,)
+                )
+                threads.append(thread)
+            for thread in threads:  
+                thread.start()
+            # 等待所有线程完成
+            for thread in threads:
+                thread.join()
+            # print("小车位置初始化完成")
 
     def waybill_classification(self):  # 这里的订单分类只分最优的4个卸货点
         waybill_points = [
