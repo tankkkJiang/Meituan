@@ -104,6 +104,7 @@ class DemoPipeline:
         self.events = None
         self.waybill_start_time_millis = None
         self.order_semaphore = threading.Semaphore(0)  # 初始不可用
+        self.drone_takeoff_semaphore = threading.Semaphore(0)  # 初始化信号量为 0，表示当前不可用
         self.lock = threading.Lock()                   # 用于保护共享资源的锁
 
     # 仿真回调函数，获取实时信息
@@ -494,6 +495,10 @@ class DemoPipeline:
                 print(f"car_sn:{car_sn},drone_sn:{drone_sn}:外卖订单bind_cargo_id{bind_cargo_id}")
                 state = WorkState.MOVE_CAR_TO_LEAVING_POINT
             elif state == WorkState.MOVE_CAR_TO_LEAVING_POINT:
+                # 等待前一单无人机起飞完成
+                if self.waybill_count > 1:
+                    print(f"car_sn:{car_sn}:等待前一单无人机起飞...")
+                    self.drone_takeoff_semaphore.acquire()  # 阻塞，直到无人机成功起飞
                 print(f"car_sn:{car_sn},drone_sn:{drone_sn}:移动小车")
                 # 小车搭载挂外卖的无人机到达起飞点
                 # car_start_time = rospy.Time.now()
@@ -590,6 +595,9 @@ class DemoPipeline:
                         elif drone_physical_status.drone_work_state == DronePhysicalStatus.TAKEOFF:
                             print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 无人机起飞中。")
                         print(f"car_sn:{car_sn},drone_sn:{drone_sn}: 等待无人机开始飞行。")
+                    # 释放信号量，通知前一单的无人机已经成功起飞
+                    self.drone_takeoff_semaphore.release()
+                    print(f"car_sn:{car_sn},drone_sn:{drone_sn}:无人机已起飞，允许后续车辆开始移动。")
                     state = WorkState.RELEASE_CARGO
             elif state == WorkState.RELEASE_CARGO:
                 des_pos = Position(
