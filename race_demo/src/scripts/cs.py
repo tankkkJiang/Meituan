@@ -440,7 +440,7 @@ class DemoPipeline:
                             (drone for drone in self.drone_physical_status if drone.drone_work_state == DronePhysicalStatus.READY and self.des_pos_reached(birth_pos, drone.pos.position, 0.5) and drone.remaining_capacity >= 30), None)
                         if drone_physical_status is None:
                             print("其他合适的无人机也没电了")
-                            # rospy.sleep(15)
+                            rospy.sleep(15)
                             state = WorkState.DRONE_BATTERY_REPLACEMENT
                         else:
                             print("换无人机")
@@ -453,7 +453,7 @@ class DemoPipeline:
                         state = WorkState.MOVE_CARGO_IN_DRONE
                     else:
                         print("车上有电量充足的无人机")
-                        # rospy.sleep(20)
+                        rospy.sleep(20)
                         state = WorkState.MOVE_CARGO_IN_DRONE
                 print(f"car_sn:{car_sn},drone_sn:{drone_sn},waybill:{waybill['cargoParam']['index']}")
                 print(f"loading_pos:{loading_pos},\n takeoff_pos:{takeoff_pos}\n, landing_pos:{landing_pos}\n,flying_height:{flying_height}")
@@ -606,7 +606,7 @@ class DemoPipeline:
                     # print("********************")
                     # print("以下打印外卖送达后信息")
                     print(f"外卖送达 - car_sn:{car_sn},drone_sn:{drone_sn}:外卖送{bill_state}啦！！！！！cargo-time用时:{cargo_time}")
-                    waiting_time_1 = round(100 - cargo_time, 1)
+                    waiting_time_1 = round(125 - cargo_time, 1)
                     rospy.sleep(waiting_time_1)
                     waiting_time_2 = waiting_time_1
                     rospy.sleep(waiting_time_2)
@@ -783,7 +783,7 @@ class DemoPipeline:
                     )
                     threads.append(thread)
                     thread.start()
-                    rospy.sleep(40)     # 每多少秒周期提取并处理一单订单
+                    rospy.sleep(50)     # 每多少秒周期提取并处理一单订单
                 except StopIteration:
                     # 如果迭代器已经耗尽，从列表中移除
                     iterators.remove(it)
