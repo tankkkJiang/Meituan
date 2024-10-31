@@ -623,6 +623,10 @@ class DemoPipeline:
                 # 无人机返回机场
                 drone_physical_status = next(
                         (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
+                # 检查无人机是否存在
+                if drone_physical_status is None:
+                    print(f"无法找到编号为 {drone_sn} 的无人机，任务无法继续")
+                    return  # 或者可以采取其他的错误处理逻辑
                 drone_pos = drone_physical_status.pos.position
                 if (self.des_pos_reached(des_pos, drone_pos, 2) and drone_physical_status.drone_work_state == DronePhysicalStatus.READY):
                     print(f"car_sn:{car_sn},drone_sn:{drone_sn}:无人机返回机场")
