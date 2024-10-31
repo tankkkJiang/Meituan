@@ -423,12 +423,12 @@ class DemoPipeline:
                     # 添加条件，不得悬挂
                     if drone_physical_status is None:
                         print(f"{car_sn}没有找到合适的无人机，只能进行空车移动")
-                        rospy.sleep(15)
+                        # rospy.sleep(15)
                         state = WorkState.MOVE_CAR_TO_LEAVING_POINT
                     else:
                         drone_sn = drone_physical_status.sn
                         print(f"{car_sn}找到无人机{drone_sn}")
-                        rospy.sleep(15)
+                        # rospy.sleep(15)
                         state = WorkState.MOVE_DRONE_ON_CAR
                 else:
                     print(f"{car_sn}当前小车有无人机")
@@ -441,7 +441,7 @@ class DemoPipeline:
                             (drone for drone in self.drone_physical_status if drone.drone_work_state == DronePhysicalStatus.READY and self.des_pos_reached(birth_pos, drone.pos.position, 0.5) and drone.remaining_capacity >= 30), None)
                         if drone_physical_status is None:
                             print("其他合适的无人机也没电了")
-                            rospy.sleep(15)
+                            # rospy.sleep(15)
                             state = WorkState.DRONE_BATTERY_REPLACEMENT
                         else:
                             print("换无人机")
@@ -454,7 +454,7 @@ class DemoPipeline:
                         state = WorkState.MOVE_CARGO_IN_DRONE
                     else:
                         print("车上有电量充足的无人机")
-                        rospy.sleep(20)
+                        # rospy.sleep(20)
                         state = WorkState.MOVE_CARGO_IN_DRONE
                 print(f"car_sn:{car_sn},drone_sn:{drone_sn},waybill:{waybill['cargoParam']['index']}")
                 print(f"loading_pos:{loading_pos},\n takeoff_pos:{takeoff_pos}\n, landing_pos:{landing_pos}\n,flying_height:{flying_height}")
@@ -521,6 +521,7 @@ class DemoPipeline:
                         if timeout > 10:
                             print("超过10s没有移动，重启循环点移动")
                             self.move_car_to_target_pos(car_list)
+                            timeout = -20
                         car_physical_status = next(
                             (car for car in self.car_physical_status if car.sn == car_sn), None)
                         if car_physical_status is None:
