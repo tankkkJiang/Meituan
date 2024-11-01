@@ -434,19 +434,19 @@ class DemoPipeline:
                     drone_physical_status = next(
                         (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                     if drone_physical_status.remaining_capacity < 30:
-                        print("电量不足")
+                        print(f"{car_sn}当前小车无人机电量不足")
                         # 挑选无人机，其状态是ready且在出生地点,电量充足
                         drone_physical_status = next(
                             (drone for drone in self.drone_physical_status if drone.drone_work_state == DronePhysicalStatus.READY and self.des_pos_reached(birth_pos, drone.pos.position, 0.5) and drone.remaining_capacity >= 30), None)
                         if drone_physical_status is None:
-                            print("其他合适的无人机也没电了")
+                            print("其他合适的无人机也没电了，进入换电池")
                             # rospy.sleep(15)
                             state = WorkState.DRONE_BATTERY_REPLACEMENT
                         else:
                             self.drone_retrieve(
                                 drone_sn, car_sn, 15, WorkState.MOVE_DRONE_ON_CAR)
                             drone_sn = drone_physical_status.sn
-                            print(f"换无人机{drone_sn}")
+                            print(f"{car_sn}换无人机{drone_sn}")
                             state = WorkState.MOVE_DRONE_ON_CAR
                     elif drone_physical_status.bind_cargo_id:  # 额外检查，防止挂两个货物
                         print(f"无人机{drone_sn}已绑定货物，可能会导致出错")
@@ -540,7 +540,7 @@ class DemoPipeline:
                             (car for car in self.car_physical_status if car.sn == car_sn), None)
                         car_pos = car_physical_status.pos.position
                         if not self.des_pos_reached(loading_pos, car_pos, 1):
-                            print("小车位置已经不在装载点，正在移动...")
+                            print(f"car_sn:{car_sn}小车小车位置已经不在装载点，正在移动...")
                             break  # 小车已经开始运动，跳出循环
                         else:
                             # print("虽然running状态但还未移动")
@@ -550,10 +550,12 @@ class DemoPipeline:
                         rospy.sleep(1)  # 等待一秒再检查小车状态
 
                 while not car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
-                    print(f"car_sn:{car_sn}小车正在移动中...")
-                    rospy.sleep(1)  # 每秒检查一次位置不符合，有可能
+                    print(f"car_sn:{car_sn}小车正在移动中...小车状态为:{car_physical_status.car_work_state}")
+                    rospy.sleep(1)  # 每隔时间检查一次位置不符合，有可能
                     car_physical_status = next(
                         (car for car in self.car_physical_status if car.sn == car_sn), None)
+                    drone_physical_status = next(
+                        (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                 MOVE_CAR_TO_LEAVING_POINT_time = (rospy.Time.now() - MOVE_CAR_TO_LEAVING_POINT_start).to_sec()
                 print(f"小车移动完毕, 小车移动时间为{MOVE_CAR_TO_LEAVING_POINT_time}")
 
