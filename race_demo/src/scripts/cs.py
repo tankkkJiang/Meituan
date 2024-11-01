@@ -175,7 +175,8 @@ class DemoPipeline:
         
 
     # 飞机航线飞行函数
-    def fly_one_route(self, drone_sn, route, speed, time_est, next_state):
+    def fly_one_route(self, drone_sn, route, speed, time_est, next_state, is_departure):
+        print(f"drone_sn:{drone_sn}:出发的无人机开始起飞")
         msg = UserCmdRequest()
         msg.peer_id = self.peer_id
         msg.task_guid = self.task_guid
@@ -200,9 +201,11 @@ class DemoPipeline:
         msg.drone_way_point_info.way_point.append(land_point)
         self.cmd_pub.publish(msg)
         rospy.sleep(3)
-        # 释放信号量，通知前一单的无人机已经成功起飞
-        self.drone_takeoff_semaphore.release()
-        print(f"drone_sn:{drone_sn}:无人机已起飞，允许后续车辆开始移动。")
+        # 仅在出发状态时释放信号量，通知后续车辆可以移动
+        if is_departure:
+            self.drone_takeoff_semaphore.release()
+            print(f"drone_sn:{drone_sn}:出发的无人机已起飞，允许后续车辆开始移动。")
+
         rospy.sleep(time_est)
         # state = next_state
 
@@ -599,7 +602,7 @@ class DemoPipeline:
                     # 无人机按照路径飞行
                     takeoff_time = rospy.Time.now()
                     self.fly_one_route(
-                        drone_sn, route, 10.0, 60, WorkState.RELEASE_CARGO)
+                        drone_sn, route, 10.0, 60, WorkState.RELEASE_CARGO, is_departure=True)
                     state = WorkState.RELEASE_CARGO
             elif state == WorkState.RELEASE_CARGO:
                 des_pos = Position(
@@ -649,7 +652,7 @@ class DemoPipeline:
                     # 飞到降落点上空，等待降落
                     back_start_time = rospy.Time.now()
                     self.fly_one_route(
-                        drone_sn, route, 10, 60, WorkState.DRONE_LANDING) 
+                        drone_sn, route, 10, 60, WorkState.DRONE_LANDING, is_departure=False) 
                     state =  WorkState.DRONE_LANDING
             elif state == WorkState.DRONE_LANDING:
                 drone_physical_status = next(
