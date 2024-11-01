@@ -443,10 +443,10 @@ class DemoPipeline:
                             # rospy.sleep(15)
                             state = WorkState.DRONE_BATTERY_REPLACEMENT
                         else:
-                            print("换无人机")
                             self.drone_retrieve(
                                 drone_sn, car_sn, 15, WorkState.MOVE_DRONE_ON_CAR)
                             drone_sn = drone_physical_status.sn
+                            print(f"换无人机{drone_sn}")
                             state = WorkState.MOVE_DRONE_ON_CAR
                     elif drone_physical_status.bind_cargo_id:  # 额外检查，防止挂两个货物
                         print(f"无人机{drone_sn}已绑定货物，可能会导致出错")
@@ -504,7 +504,7 @@ class DemoPipeline:
                     (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                 bind_cargo_id = drone_physical_status.bind_cargo_id
                 MOVE_CARGO_IN_DRONE_time = (rospy.Time.now() - MOVE_CARGO_IN_DRONE_start).to_sec()
-                print(f"car_sn:{car_sn},drone_sn:{drone_sn}:外卖订单bind_cargo_id{bind_cargo_id},用时:{MOVE_CARGO_IN_DRONE_time}秒，开始进入移车环节")
+                print(f"car_sn:{car_sn},drone_sn:{drone_sn}:外卖订单bind_cargo_id{bind_cargo_id},绑外卖用时:{MOVE_CARGO_IN_DRONE_time}秒，开始进入移车环节")
                 state = WorkState.MOVE_CAR_TO_LEAVING_POINT
             elif state == WorkState.MOVE_CAR_TO_LEAVING_POINT:
                 # 等待前一单无人机起飞完成
@@ -515,6 +515,7 @@ class DemoPipeline:
                 # car_start_time = rospy.Time.now()
 
                 print(f"car_sn:{car_sn}开始运动")
+                MOVE_CAR_TO_LEAVING_POINT_start = rospy.Time.now()
                 # 小车搭载挂外卖的无人机到达起飞点
                 self.move_car_to_target_pos(car_list)
                 timeout = 0
@@ -553,10 +554,14 @@ class DemoPipeline:
                     rospy.sleep(1)  # 每秒检查一次位置不符合，有可能
                     car_physical_status = next(
                         (car for car in self.car_physical_status if car.sn == car_sn), None)
-                print("小车移动完毕")
+                MOVE_CAR_TO_LEAVING_POINT_time = (rospy.Time.now() - MOVE_CAR_TO_LEAVING_POINT_start).to_sec()
+                print(f"小车移动完毕, 小车移动时间为{MOVE_CAR_TO_LEAVING_POINT_time}")
 
                 start_to_move_finish_time = (rospy.Time.now() - dispatching_start_time).to_sec()
                 print(f"car_sn:{car_sn},drone_sn:{drone_sn}:从订单开始到移车结束: {start_to_move_finish_time}")
+                if start_to_move_finish_time < 40:
+                    rospy.sleep(40-start_to_move_finish_time)
+                    print(f"等待{40-start_to_move_finish_time}秒才释放下一单, 保证一个周期40s")
                 self.order_semaphore.release()  # 释放信号量，允许第二单开始
                 # rospy.sleep(3)
                 state = WorkState.RELEASE_DRONE_OUT
@@ -614,7 +619,7 @@ class DemoPipeline:
                     # print("********************")
                     # print("以下打印外卖送达后信息")
                     print(f"外卖送达 - car_sn:{car_sn},drone_sn:{drone_sn}:外卖送{bill_state}啦！！！！！cargo-time用时:{cargo_time}")
-                    waiting_time_1 = round(125 - cargo_time, 1)
+                    waiting_time_1 = round(120 - cargo_time, 1)
                     rospy.sleep(waiting_time_1)
                     waiting_time_2 = waiting_time_1
                     rospy.sleep(waiting_time_2)
