@@ -532,8 +532,8 @@ class DemoPipeline:
                 # 检查小车是否处于运动状态
                 while True:
                     timeout += 1
-                    if timeout > 3:
-                        print("超过3s没有移动，重启循环点移动")
+                    if timeout > 5:
+                        print("超过5s没有移动，重启循环点移动")
                         self.move_car_to_target_pos(car_list)
                         timeout = -20
                     car_physical_status = next(
