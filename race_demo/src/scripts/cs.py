@@ -564,9 +564,9 @@ class DemoPipeline:
 
                 start_to_move_finish_time = (rospy.Time.now() - dispatching_start_time).to_sec()
                 print(f"car_sn:{car_sn},drone_sn:{drone_sn}:从订单开始到移车结束: {start_to_move_finish_time}")
-                if start_to_move_finish_time < 40:
-                    rospy.sleep(40-start_to_move_finish_time)
-                    print(f"等待{40-start_to_move_finish_time}秒才释放下一单, 保证一个周期40s")
+                if start_to_move_finish_time < 45:
+                    rospy.sleep(45-start_to_move_finish_time)
+                    print(f"等待{45-start_to_move_finish_time}秒才释放下一单, 保证一个周期40s")
                 self.order_semaphore.release()  # 释放信号量，允许第二单开始
                 # rospy.sleep(3)
                 state = WorkState.RELEASE_DRONE_OUT
@@ -624,7 +624,7 @@ class DemoPipeline:
                     # print("********************")
                     # print("以下打印外卖送达后信息")
                     print(f"外卖送达 - car_sn:{car_sn},drone_sn:{drone_sn}:外卖送{bill_state}啦！！！！！cargo-time用时:{cargo_time}")
-                    waiting_time_1 = round(120 - cargo_time, 1)
+                    waiting_time_1 = round(135 - cargo_time, 1)
                     rospy.sleep(waiting_time_1)
                     waiting_time_2 = waiting_time_1
                     rospy.sleep(waiting_time_2)
@@ -801,7 +801,7 @@ class DemoPipeline:
                     )
                     threads.append(thread)
                     thread.start()
-                    rospy.sleep(35)     # 每多少秒周期提取并处理一单订单
+                    rospy.sleep(45)     # 每多少秒周期提取并处理一单订单
                 except StopIteration:
                     # 如果迭代器已经耗尽，从列表中移除
                     iterators.remove(it)
