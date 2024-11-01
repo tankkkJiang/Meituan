@@ -114,6 +114,7 @@ class DemoPipeline:
         self.bills_status = panoramic_info.bills
         self.score = panoramic_info.score
         self.events = panoramic_info.events
+        self.is_empty_car = False  # 新增，表示是否空车行走
 
     # 系统初始化(按需)
     def sys_init(self):
@@ -402,7 +403,7 @@ class DemoPipeline:
         while not rospy.is_shutdown():
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
                 if self.waybill_count > 1:
-                    print("正在等待前一单完成...")
+                    print("正在等待前一单移车完成再开始订单...")
                     self.order_semaphore.acquire()  # 阻塞，等待前一单完成并释放信号量
                 print(f"订单数{self.waybill_count}：小车无人机开始进行初始化")
                 dispatching_start_time = rospy.Time.now()
@@ -425,12 +426,11 @@ class DemoPipeline:
                     # 添加条件，不得悬挂
                     if drone_physical_status is None:
                         print(f"{car_sn}没有找到合适的无人机，只能进行空车移动")
-                        # rospy.sleep(15)
+                        self.is_empty_car = True  # 设置为空车行走
                         state = WorkState.MOVE_CAR_TO_LEAVING_POINT
                     else:
                         drone_sn = drone_physical_status.sn
                         print(f"{car_sn}找到无人机{drone_sn}")
-                        # rospy.sleep(15)
                         state = WorkState.MOVE_DRONE_ON_CAR
                 else:
                     print(f"{car_sn}当前小车有无人机")
@@ -449,7 +449,7 @@ class DemoPipeline:
                             self.drone_retrieve(
                                 drone_sn, car_sn, 15, WorkState.MOVE_DRONE_ON_CAR)
                             drone_sn = drone_physical_status.sn
-                            print(f"{car_sn}换无人机{drone_sn}")
+                            print(f"{car_sn}换合适的无人机{drone_sn}")
                             state = WorkState.MOVE_DRONE_ON_CAR
                     elif drone_physical_status.bind_cargo_id:  # 额外检查，防止挂两个货物
                         print(f"无人机{drone_sn}已绑定货物，可能会导致出错")
@@ -516,6 +516,12 @@ class DemoPipeline:
                     self.drone_takeoff_semaphore.acquire()  # 阻塞，直到无人机成功起飞
                 # 小车搭载挂外卖的无人机到达起飞点
                 # car_start_time = rospy.Time.now()
+                # 移车估计用时15s
+
+                MOVE_CAR_TO_LEAVING_POINT_time = (rospy.Time.now() - dispatching_start_time).to_sec()
+                print(f"从订单开始到移车开始:{MOVE_CAR_TO_LEAVING_POINT_time}秒")
+                if MOVE_CAR_TO_LEAVING_POINT_time < 30:
+                    rospy.sleep(30-MOVE_CAR_TO_LEAVING_POINT_time)
 
                 print(f"car_sn:{car_sn}开始运动")
                 MOVE_CAR_TO_LEAVING_POINT_start = rospy.Time.now()
@@ -566,44 +572,51 @@ class DemoPipeline:
                 print(f"car_sn:{car_sn},drone_sn:{drone_sn}:从订单开始到移车结束: {start_to_move_finish_time}")
                 if start_to_move_finish_time < 45:
                     rospy.sleep(45-start_to_move_finish_time)
-                    print(f"等待{45-start_to_move_finish_time}秒才释放下一单, 保证一个周期40s")
-                self.order_semaphore.release()  # 释放信号量，允许第二单开始
+                    print(f"等待{45-start_to_move_finish_time}秒才释放下一单, 保证一个周期45s")
+                self.order_semaphore.release()  # 释放信号量，允许下一单开始，可以实现40s处理一单
                 # rospy.sleep(3)
                 state = WorkState.RELEASE_DRONE_OUT
             elif state == WorkState.RELEASE_DRONE_OUT:
-                # 放飞无人机
-                # 查询无人机当前的位置
-                car_physical_status = next(
-                    (car for car in self.car_physical_status if car.sn == car_sn), None)
-                drone_physical_status = next(
-                        (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
-                drone_pos = drone_physical_status.pos.position
-                # 判断无人机是否到达起飞地点
-                if (self.des_pos_reached(drone_pos, takeoff_pos, 1) and car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY):
-                    print(f"car_sn:{car_sn},drone_sn:{drone_sn}:准备放飞无人机")
-                    pre_time = (rospy.Time.now() - dispatching_start_time).to_sec()
-                    print(f"car_sn:{car_sn},drone_sn:{drone_sn}:前期准备工作（到放飞无人机）花费的时间{pre_time}")
-                    start_pos = (drone_pos.x, drone_pos.y, flying_height)
-                    middle_pos = (
-                        waybill['targetPosition']['x'], waybill['targetPosition']['y'], flying_height)
-                    start_to_middle_route = navigate_with_astar(start_pos, middle_pos, step_size=5, threshold=5)
-                    print(f"car_sn:{car_sn},drone_sn:{drone_sn}:路线{start_to_middle_route}")
-                    # 将每个路径点转换为 Position 对象
-                    position_list = [Position(x, y, z) for (x, y, z) in start_to_middle_route]
-                    end_pos = Position(
-                        waybill['targetPosition']['x'],
-                        waybill['targetPosition']['y'],
-                        waybill['targetPosition']['z']-5)
-                    route = position_list + [end_pos]
-                    # 计算总距离
-                    total_distance = 0
-                    for i in range(1, len(route)):
-                        total_distance += self.calculate_distance(route[i-1], route[i])
-                    # 无人机按照路径飞行
-                    takeoff_time = rospy.Time.now()
-                    self.fly_one_route(
-                        drone_sn, route, 10.0, 60, WorkState.RELEASE_CARGO, is_departure=True)
-                    state = WorkState.RELEASE_CARGO
+                if self.is_empty_car:
+                    # 空车情况
+                    print(f"car_sn:{car_sn}空车行走，回到选择无人机的状态，主动释放起飞锁")
+                    self.drone_takeoff_semaphore.release()
+                    self.is_empty_car = False  # 重置为空车状态
+                    state = WorkState.SELACT_WAYBILL_CAR_DRONE
+                else:
+                    # 非空车情况：放飞无人机
+                    # 查询无人机当前的位置
+                    car_physical_status = next(
+                        (car for car in self.car_physical_status if car.sn == car_sn), None)
+                    drone_physical_status = next(
+                            (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
+                    drone_pos = drone_physical_status.pos.position
+                    # 判断无人机是否到达起飞地点
+                    if (self.des_pos_reached(drone_pos, takeoff_pos, 1) and car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY):
+                        print(f"car_sn:{car_sn},drone_sn:{drone_sn}:准备放飞无人机")
+                        pre_time = (rospy.Time.now() - dispatching_start_time).to_sec()
+                        print(f"car_sn:{car_sn},drone_sn:{drone_sn}:前期准备工作（到放飞无人机）花费的时间{pre_time}")
+                        start_pos = (drone_pos.x, drone_pos.y, flying_height)
+                        middle_pos = (
+                            waybill['targetPosition']['x'], waybill['targetPosition']['y'], flying_height)
+                        start_to_middle_route = navigate_with_astar(start_pos, middle_pos, step_size=5, threshold=5)
+                        print(f"car_sn:{car_sn},drone_sn:{drone_sn}:路线{start_to_middle_route}")
+                        # 将每个路径点转换为 Position 对象
+                        position_list = [Position(x, y, z) for (x, y, z) in start_to_middle_route]
+                        end_pos = Position(
+                            waybill['targetPosition']['x'],
+                            waybill['targetPosition']['y'],
+                            waybill['targetPosition']['z']-5)
+                        route = position_list + [end_pos]
+                        # 计算总距离
+                        total_distance = 0
+                        for i in range(1, len(route)):
+                            total_distance += self.calculate_distance(route[i-1], route[i])
+                        # 无人机按照路径飞行
+                        takeoff_time = rospy.Time.now()
+                        self.fly_one_route(
+                            drone_sn, route, 10.0, 60, WorkState.RELEASE_CARGO, is_departure=True)
+                        state = WorkState.RELEASE_CARGO
             elif state == WorkState.RELEASE_CARGO:
                 des_pos = Position(
                     waybill['targetPosition']['x'],
