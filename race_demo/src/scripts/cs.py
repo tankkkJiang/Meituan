@@ -205,7 +205,7 @@ class DemoPipeline:
         # 仅在出发状态时释放信号量，通知后续车辆可以移动
         if is_departure:
             self.drone_takeoff_semaphore.release()
-            print(f"drone_sn:{drone_sn}:出发的无人机已起飞，允许后续车辆开始移动。")
+            print(f"drone_sn:{drone_sn}:出发的无人机已起飞，释放起飞锁，允许后续车辆开始移动。")
 
         rospy.sleep(time_est)
         # state = next_state
@@ -519,9 +519,9 @@ class DemoPipeline:
                 # 移车估计用时15s
 
                 MOVE_CAR_TO_LEAVING_POINT_time = (rospy.Time.now() - dispatching_start_time).to_sec()
-                print(f"从订单开始到移车开始:{MOVE_CAR_TO_LEAVING_POINT_time}秒")
-                if MOVE_CAR_TO_LEAVING_POINT_time < 30:
-                    rospy.sleep(30-MOVE_CAR_TO_LEAVING_POINT_time)
+                print(f"car_sn:{car_sn}:前一单无人机已起飞，从订单开始到移车开始:{MOVE_CAR_TO_LEAVING_POINT_time}秒,可能需要等待")
+                if MOVE_CAR_TO_LEAVING_POINT_time < 35:
+                    rospy.sleep(35-MOVE_CAR_TO_LEAVING_POINT_time)
 
                 print(f"car_sn:{car_sn}开始运动")
                 MOVE_CAR_TO_LEAVING_POINT_start = rospy.Time.now()
@@ -532,8 +532,8 @@ class DemoPipeline:
                 # 检查小车是否处于运动状态
                 while True:
                     timeout += 1
-                    if timeout > 10:
-                        print("超过10s没有移动，重启循环点移动")
+                    if timeout > 3:
+                        print("超过3s没有移动，重启循环点移动")
                         self.move_car_to_target_pos(car_list)
                         timeout = -20
                     car_physical_status = next(
@@ -544,22 +544,22 @@ class DemoPipeline:
                         continue
                     
                     if car_physical_status.car_work_state == CarPhysicalStatus.CAR_RUNNING:
-                        print(f"car_sn:{car_sn}小车已经进入running状态。")
+                        # print(f"car_sn:{car_sn}小车已经进入running状态。")
                         car_physical_status = next(
                             (car for car in self.car_physical_status if car.sn == car_sn), None)
                         car_pos = car_physical_status.pos.position
                         if not self.des_pos_reached(loading_pos, car_pos, 1):
-                            print(f"car_sn:{car_sn}小车小车位置已经不在装载点，正在移动...")
+                            # print(f"car_sn:{car_sn}小车小车位置已经不在装载点，正在移动...")
                             break  # 小车已经开始运动，跳出循环
                         else:
                             # print("虽然running状态但还未移动")
                             rospy.sleep(3)
                     else:
-                        print("小车未在运动状态，等待小车开始移动...")
+                        # print("小车未在运动状态，等待小车开始移动...")
                         rospy.sleep(1)  # 等待一秒再检查小车状态
 
                 while not car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
-                    print(f"car_sn:{car_sn}小车正在移动中...小车状态为:{car_physical_status.car_work_state}")
+                    # print(f"car_sn:{car_sn}小车正在移动中...小车状态为:{car_physical_status.car_work_state}")
                     rospy.sleep(1)  # 每隔时间检查一次位置不符合，有可能
                     car_physical_status = next(
                         (car for car in self.car_physical_status if car.sn == car_sn), None)
@@ -570,17 +570,19 @@ class DemoPipeline:
 
                 start_to_move_finish_time = (rospy.Time.now() - dispatching_start_time).to_sec()
                 print(f"car_sn:{car_sn},drone_sn:{drone_sn}:从订单开始到移车结束: {start_to_move_finish_time}")
-                if start_to_move_finish_time < 45:
-                    rospy.sleep(45-start_to_move_finish_time)
-                    print(f"等待{45-start_to_move_finish_time}秒才释放下一单, 保证一个周期45s")
+                if start_to_move_finish_time < 50:
+                    rospy.sleep(50-start_to_move_finish_time)
+                    print(f"等待{50-start_to_move_finish_time}秒才释放下一单的开始, 保证一个周期50s")
                 self.order_semaphore.release()  # 释放信号量，允许下一单开始，可以实现40s处理一单
                 # rospy.sleep(3)
                 state = WorkState.RELEASE_DRONE_OUT
             elif state == WorkState.RELEASE_DRONE_OUT:
                 if self.is_empty_car:
                     # 空车情况
-                    print(f"car_sn:{car_sn}空车行走，回到选择无人机的状态，主动释放起飞锁")
+                    print(f"car_sn:{car_sn}空车行走移动完成，回到选择无人机的状态，主动释放起飞锁")
                     self.drone_takeoff_semaphore.release()
+                    # 等待5个移动周期，重回订单初始化
+                    rospy.sleep(225)
                     self.is_empty_car = False  # 重置为空车状态
                     state = WorkState.SELACT_WAYBILL_CAR_DRONE
                 else:
@@ -637,7 +639,7 @@ class DemoPipeline:
                     # print("********************")
                     # print("以下打印外卖送达后信息")
                     print(f"外卖送达 - car_sn:{car_sn},drone_sn:{drone_sn}:外卖送{bill_state}啦！！！！！cargo-time用时:{cargo_time}")
-                    waiting_time_1 = round(135 - cargo_time, 1)
+                    waiting_time_1 = round(150 - cargo_time, 1)
                     rospy.sleep(waiting_time_1)
                     waiting_time_2 = waiting_time_1
                     rospy.sleep(waiting_time_2)
@@ -814,7 +816,7 @@ class DemoPipeline:
                     )
                     threads.append(thread)
                     thread.start()
-                    rospy.sleep(45)     # 每多少秒周期提取并处理一单订单
+                    rospy.sleep(50)     # 每多少秒周期提取并处理一单订单
                 except StopIteration:
                     # 如果迭代器已经耗尽，从列表中移除
                     iterators.remove(it)
