@@ -503,6 +503,8 @@ class DemoPipeline:
             elif state == WorkState.MOVE_CARGO_IN_DRONE:
                 MOVE_CARGO_IN_DRONE_start = rospy.Time.now()
                 print(f"car_sn:{car_sn},drone_sn:{drone_sn}:绑外卖")
+                cargo_bind_time_ms = int(rospy.get_time() * 1000)
+                print(f"货物绑定时间戳: {cargo_bind_time_ms} 毫秒时间戳")
                 car_physical_status = next(
                         (car for car in self.car_physical_status  if self.des_pos_reached(car.pos.position, loading_pos, 0.5) and car.car_work_state == CarPhysicalStatus.CAR_READY), None)
                 drone_sn = car_physical_status.drone_sn
@@ -646,6 +648,8 @@ class DemoPipeline:
                     # print("********************")
                     # print("以下打印外卖送达后信息")
                     print(f"外卖送达 - car_sn:{car_sn},drone_sn:{drone_sn}:外卖送{bill_state}啦！！！！！cargo-time用时:{cargo_time}")
+                    delivery_time_ms = int(rospy.get_time() * 1000)
+                    print(f"货物送达时间戳: {delivery_time_ms} 毫秒时间戳")
                     waiting_time_1 = round(4 * (Moving_car_cycle+1) - cargo_time, 1)
                     rospy.sleep(waiting_time_1)
                     waiting_time_2 = waiting_time_1
@@ -715,6 +719,8 @@ class DemoPipeline:
                     print(f"订单时间 orderTime: {waybill['orderTime']} - 毫秒戳")
                     print(f"最佳送达时间 betterTime: {waybill['betterTime']} - 毫秒戳")
                     print(f"超时时间 timeout: {waybill['timeout']} - 毫秒戳")
+                    print(f"货物绑定时间戳: {cargo_bind_time_ms} - 毫秒戳")
+                    print(f"货物送达时间戳: {delivery_time_ms} - 毫秒戳")
                     print(f"已开始的总订单量{self.waybill_count_start}")
                     print(f"已完成的总订单量{self.waybill_count_finish}，当前的分数{self.score}")
                     print("无人机降落完成，允许小车继续移动。")
@@ -824,7 +830,9 @@ class DemoPipeline:
                     print("********************")
                     print(f"看看当前事件是啥{self.events}")
                     waybill = next(it)
+                    running_start_time_ms = int(rospy.get_time() * 1000)
                     print("当前时间(秒):", rospy.get_time() - running_start_time)
+                    print(f"当前时间毫秒时间戳:{running_start_time_ms}")
                     print("提取订单: ")
                     print("waybill如下:", waybill)
                     print("********************")
