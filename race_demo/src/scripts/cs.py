@@ -108,6 +108,7 @@ class DemoPipeline:
         self.waybill_start_time_millis = None
         self.order_semaphore = threading.Semaphore(0)  # 初始不可用
         self.drone_takeoff_semaphore = threading.Semaphore(0)  # 初始化信号量为 0，表示当前不可用
+        self.drone_landing_semaphore = threading.Semaphore(1)  # 初始化为 1，表示初始时允许小车移动
         self.lock = threading.Lock()                     # 用于保护共享资源的锁
 
     # 仿真回调函数，获取实时信息
@@ -518,12 +519,11 @@ class DemoPipeline:
                 if self.waybill_count_start > 1:
                     print(f"car_sn:{car_sn}:等待前一单无人机起飞...")
                     self.drone_takeoff_semaphore.acquire()  # 阻塞，直到无人机成功起飞
-                # 小车搭载挂外卖的无人机到达起飞点
-                # car_start_time = rospy.Time.now()
-                # 移车估计用时15s
+                self.drone_landing_semaphore.acquire()  # 阻塞，直到降落信号量被释放
 
+                # 移车估计用时15s
                 MOVE_CAR_TO_LEAVING_POINT_time = (rospy.Time.now() - dispatching_start_time).to_sec()
-                print(f"car_sn:{car_sn}:前一单无人机已起飞，从订单开始到移车开始:{MOVE_CAR_TO_LEAVING_POINT_time}秒,可能需要等待(准备周期)")
+                print(f"car_sn:{car_sn}:前一单无人机已起飞，前前单无人机已降落，从订单开始到移车开始:{MOVE_CAR_TO_LEAVING_POINT_time}秒,可能需要等待(准备周期)")
                 if MOVE_CAR_TO_LEAVING_POINT_time < Preparation_Cycle:
                     rospy.sleep(Preparation_Cycle-MOVE_CAR_TO_LEAVING_POINT_time)
 
@@ -536,8 +536,8 @@ class DemoPipeline:
                 # 检查小车是否处于运动状态
                 while True:
                     timeout += 1
-                    if timeout > 5:
-                        print("超过5s没有移动，重启循环点移动")
+                    if timeout > 3:
+                        print("超过3s没有移动，重启循环点移动")
                         self.move_car_to_target_pos(car_list)
                         timeout = -20
                     car_physical_status = next(
@@ -577,7 +577,8 @@ class DemoPipeline:
                 if start_to_move_finish_time < Moving_car_cycle:
                     rospy.sleep(Moving_car_cycle-start_to_move_finish_time)
                     print(f"等待{Moving_car_cycle-start_to_move_finish_time}秒才释放下一单的开始, 保证一个周期{Moving_car_cycle}s")
-                self.order_semaphore.release()  # 释放信号量，允许下一单开始，可以实现几秒处理一单
+                self.order_semaphore.release()         # 释放信号量，允许下一单开始，可以实现几秒处理一单
+                self.drone_landing_semaphore.release() # 释放降落信号量，以便下一个小车可以继续降落
                 # rospy.sleep(3)
                 state = WorkState.RELEASE_DRONE_OUT
             elif state == WorkState.RELEASE_DRONE_OUT:
@@ -643,7 +644,7 @@ class DemoPipeline:
                     # print("********************")
                     # print("以下打印外卖送达后信息")
                     print(f"外卖送达 - car_sn:{car_sn},drone_sn:{drone_sn}:外卖送{bill_state}啦！！！！！cargo-time用时:{cargo_time}")
-                    waiting_time_1 = round(3*Moving_car_cycle - cargo_time, 1)
+                    waiting_time_1 = round(3 * (Moving_car_cycle+1) - cargo_time, 1)
                     rospy.sleep(waiting_time_1)
                     waiting_time_2 = waiting_time_1
                     rospy.sleep(waiting_time_2)
@@ -680,6 +681,8 @@ class DemoPipeline:
                 drone_pos = drone_physical_status.pos.position
                 if self.des_pos_reached(end_pos_2, drone_pos, 0.5):
                     back_time = (rospy.Time.now() - back_start_time).to_sec()
+                    print(f"无人机 {drone_sn} 返回到降落临近点，增加降落信号量以防止小车移动")
+                    self.drone_landing_semaphore.acquire()  # 阻止小车移动
                     if flag:
                         print(f"car_sn:{car_sn},drone_sn:{drone_sn}:飞机返回耗时: {back_time}秒")
                         flag = False
@@ -697,7 +700,7 @@ class DemoPipeline:
                     print(f"返航等待{waiting_time_2}秒")
                     print(f"飞机返回耗时: {back_time}秒")
                     print(f"飞机返回着陆耗时: {back_land_time}秒")
-                    print(f"飞机着陆耗时: {back_land_time-back_time}秒")
+                    print(f"飞机着陆耗时(pos2->landing_pos): {back_land_time-back_time}秒")
                     print(f"来回的差值{back_land_time-cargo_time}")
                     print(f"编号Waybill ID: {waybill['index']}")
                     print(f"订单时间 orderTime: {waybill['orderTime']} - 毫秒戳")
@@ -707,6 +710,8 @@ class DemoPipeline:
                     print(f"已完成的总订单量{self.waybill_count_finish}，当前的分数{self.score}")
                     print("无人机降落完成，允许小车继续移动。")
                     print("********************")
+                    print(f"car_sn:{car_sn},drone_sn:{drone_sn}:已成功降落，释放降落信号量，允许小车移动")
+                    self.drone_landing_semaphore.release()  # 释放信号量，允许小车移动
                     # print(f"看看当前事件是啥{self.events}")
                     break
                         
