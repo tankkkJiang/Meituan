@@ -830,6 +830,8 @@ class DemoPipeline:
             # 使用副本循环，因为可能会移除空的子列表
             # 创建每个子订单组的进程
             threads = []
+            print("防止在之前完成，先行进行停顿")
+            rospy.sleep(20) 
             # 每个迭代器对应一个已经排序的子列表
             for it in iterators[:]:
                 try:
@@ -840,8 +842,7 @@ class DemoPipeline:
                     running_start_time_ms = int(rospy.get_time() * 1000)
                     print("当前时间(秒):", rospy.get_time() - running_start_time)
                     print(f"当前时间毫秒时间戳:{running_start_time_ms}")
-                    print("提取订单: ")
-                    print("waybill如下:", waybill)
+                    print(f"提取订单-waybill如下:{waybill}")
                     print("********************")
                     # 初始化ros变量
                     state = WorkState.SELACT_WAYBILL_CAR_DRONE
