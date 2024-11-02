@@ -34,8 +34,8 @@ import pymtmap
 
 # demo定义的状态流转
 
-Moving_car_cycle = 40
-Preparation_Cycle = 25
+Moving_car_cycle = 35
+Preparation_Cycle = 20
 
 class WorkState(Enum):
     START = 1
@@ -458,9 +458,7 @@ class DemoPipeline:
                         state = WorkState.MOVE_CARGO_IN_DRONE
                     else:
                         print(f"car_sn:{car_sn}车上有电量充足的无人机，进入绑货物")
-                        print(f"car_sn:{car_sn}测试换电")
-                        state = WorkState.DRONE_BATTERY_REPLACEMENT
-                        # state = WorkState.MOVE_CARGO_IN_DRONE
+                        state = WorkState.MOVE_CARGO_IN_DRONE
                 print(f"car_sn:{car_sn},drone_sn:{drone_sn},waybill:{waybill['cargoParam']['index']}")
                 print(f"loading_pos:{loading_pos},\n takeoff_pos:{takeoff_pos}\n, landing_pos:{landing_pos}\n,flying_height:{flying_height}")
             elif state == WorkState.MOVE_DRONE_ON_CAR:
@@ -488,7 +486,7 @@ class DemoPipeline:
                 if(self.des_pos_reached(loading_pos, car_pos, 1) and car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY):
                     print(f"car_sn:{car_sn},drone_sn:{drone_sn}:换电池")
                     self.battery_replacement(
-                        drone_sn, 12,  WorkState.MOVE_CAR_TO_LEAVING_POINT)
+                        drone_sn, 10,  WorkState.MOVE_CAR_TO_LEAVING_POINT)
                     drone_physical_status = next(
                         (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                     print(f"换电后无人机{drone_sn}电量为:{drone_physical_status.remaining_capacity}")
@@ -508,7 +506,7 @@ class DemoPipeline:
                 # 挂外卖
                 # 从订单信息waybill中提取对应的外卖ID
                 cargo_id = waybill['cargoParam']['index']
-                self.move_cargo_in_drone(cargo_id, drone_sn, 12.0)
+                self.move_cargo_in_drone(cargo_id, drone_sn, 10.0)
                 drone_physical_status = next(
                     (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                 bind_cargo_id = drone_physical_status.bind_cargo_id
@@ -686,6 +684,7 @@ class DemoPipeline:
                         print(f"car_sn:{car_sn},drone_sn:{drone_sn}:飞机返回耗时: {back_time}秒")
                         flag = False
                 if self.des_pos_reached(landing_pos, drone_pos, 1) and drone_physical_status.drone_work_state == DronePhysicalStatus.READY:
+                    self.waybill_count_finish += 1
                     back_land_time = (rospy.Time.now() - back_start_time).to_sec()
                     print("********************")
                     print("以下打印无人机降落后信息")
