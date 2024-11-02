@@ -536,15 +536,15 @@ class DemoPipeline:
                 # 检查小车是否处于运动状态
                 while True:
                     timeout += 1
-                    if timeout > 3:
-                        print("超过3s没有移动，重启循环点移动")
+                    if timeout > 5:
+                        print("超过5s没有移动，重启循环点移动")
                         self.move_car_to_target_pos(car_list)
                         timeout = -20
                     car_physical_status = next(
                         (car for car in self.car_physical_status if car.sn == car_sn), None)
                     if car_physical_status is None:
                         print("未找到对应的小车状态信息")
-                        rospy.sleep(1)  # 短暂等待后再次检查
+                        rospy.sleep(0.5)  # 短暂等待后再次检查
                         continue
                     
                     if car_physical_status.car_work_state == CarPhysicalStatus.CAR_RUNNING:
