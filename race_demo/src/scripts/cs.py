@@ -95,6 +95,9 @@ class DemoPipeline:
         # 在派发前按 betterTime + timeout 排序waybills
         # self.waybill_infos.sort(key=lambda x: x['betterTime'] + x['timeout'])
         self.waybill_infos.sort(key=lambda x: x['orderTime'])
+        for i, waybill in enumerate(self.waybill_infos[:40], start=1):
+            print(f"订单 {i}: cargoIndex={waybill['cargoIndex']}, orderTime={waybill['orderTime']}, "
+                f"betterTime={waybill['betterTime']}, deliverTime={waybill['deliverTime']}, timeout={waybill['timeout']}")
 
         self.unloading_cargo_stations = self.config['taskParam']['unloadingCargoStationList']
         self.drone_sn_list = [drone['droneSn'] for drone in self.drone_infos]
