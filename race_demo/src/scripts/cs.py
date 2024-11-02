@@ -700,6 +700,13 @@ class DemoPipeline:
                     self.drone_landing_semaphore.release()  # 释放信号量，允许小车移动(+1)
                     self.is_landing_blocked = False  # 重置标志位
 
+                    # 获取货物信息
+                    cargo_info = next((bill for bill in self.bills_status if bill['cargoIndex'] == cargo_id), None)
+                    if cargo_info:
+                        better_time_pa = cargo_info['betterTime']
+                        order_time_pa = cargo_info['orderTime']
+                        timeout_pa = cargo_info['timeout']
+
                     self.waybill_count_finish += 1
                     back_land_time = (rospy.Time.now() - back_start_time).to_sec()
                     print("********************")
@@ -716,9 +723,9 @@ class DemoPipeline:
                     print(f"飞机着陆耗时(pos2->landing_pos): {back_land_time-back_time}秒")
                     print(f"来回的差值{back_land_time-cargo_time}")
                     print(f"编号Waybill ID: {waybill['index']}")
-                    print(f"订单时间 orderTime: {waybill['orderTime']} - 毫秒戳")
-                    print(f"最佳送达时间 betterTime: {waybill['betterTime']} - 毫秒戳")
-                    print(f"超时时间 timeout: {waybill['timeout']} - 毫秒戳")
+                    print(f"订单时间 orderTime: {better_time_pa} - 毫秒戳")
+                    print(f"最佳送达时间 betterTime: {order_time_pa} - 毫秒戳")
+                    print(f"超时时间 timeout: {timeout_pa} - 毫秒戳")
                     print(f"货物绑定时间戳: {cargo_bind_time_ms} - 毫秒戳")
                     print(f"货物送达时间戳: {delivery_time_ms} - 毫秒戳")
                     print(f"已开始的总订单量{self.waybill_count_start}")
