@@ -451,7 +451,7 @@ class DemoPipeline:
                             state = WorkState.DRONE_BATTERY_REPLACEMENT
                         else:
                             self.drone_retrieve(
-                                drone_sn, car_sn, 15, WorkState.MOVE_DRONE_ON_CAR)
+                                drone_sn, car_sn, 3, WorkState.MOVE_DRONE_ON_CAR)
                             drone_sn = drone_physical_status.sn
                             print(f"{car_sn}换合适的无人机{drone_sn}")
                             state = WorkState.MOVE_DRONE_ON_CAR
@@ -460,6 +460,16 @@ class DemoPipeline:
                         state = WorkState.MOVE_CARGO_IN_DRONE
                     else:
                         print(f"car_sn:{car_sn}车上有电量充足的无人机，进入绑货物")
+
+                        # 测试回收飞机所用时间
+                        print("测试回收飞机多久")
+                        drone_retrieve_start = rospy.Time.now()
+                        self.drone_retrieve(
+                                drone_sn, car_sn, 3, WorkState.MOVE_DRONE_ON_CAR)
+                        drone_retrieve_time = (rospy.Time.now() - drone_retrieve_start).to_sec()
+                        print(f"回收飞机多久{drone_retrieve_time}秒")
+                        
+
                         state = WorkState.MOVE_CARGO_IN_DRONE
                 print(f"car_sn:{car_sn},drone_sn:{drone_sn},waybill:{waybill['cargoParam']['index']}")
                 print(f"loading_pos:{loading_pos},\n takeoff_pos:{takeoff_pos}\n, landing_pos:{landing_pos}\n,flying_height:{flying_height}")
