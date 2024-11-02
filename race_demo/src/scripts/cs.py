@@ -93,7 +93,8 @@ class DemoPipeline:
 
         self.waybill_infos = self.config['taskParam']['waybillParamList']
         # 在派发前按 betterTime + timeout 排序waybills
-        self.waybill_infos.sort(key=lambda x: x['betterTime'] + x['timeout'])
+        # self.waybill_infos.sort(key=lambda x: x['betterTime'] + x['timeout'])
+        self.waybill_infos.sort(key=lambda x: x['orderTime'])
 
         self.unloading_cargo_stations = self.config['taskParam']['unloadingCargoStationList']
         self.drone_sn_list = [drone['droneSn'] for drone in self.drone_infos]
@@ -370,11 +371,17 @@ class DemoPipeline:
                 if distance < 1:
                     groups[index].append(waybill)
                     break 
-        # 在每个组内按 'betterTime' + 'timeout' 进行排序
+        # # 在每个组内按 'betterTime' + 'timeout' 进行排序
+        # for group in groups:
+        #     group.sort(key=lambda x: x['betterTime'] + x['timeout'])
+        # # 现在根据每个组中第一个条目的 'betterTime' + 'timeout' 对所有组进行排序，如果组不为空
+        # sorted_groups = sorted(groups, key=lambda g: g[0]['betterTime'] + g[0]['timeout'] if g else float('inf'))
+
+        # 在每个组内按orderTime进行排序
         for group in groups:
-            group.sort(key=lambda x: x['betterTime'] + x['timeout'])
-        # 现在根据每个组中第一个条目的 'betterTime' + 'timeout' 对所有组进行排序，如果组不为空
-        sorted_groups = sorted(groups, key=lambda g: g[0]['betterTime'] + g[0]['timeout'] if g else float('inf'))
+            group.sort(key=lambda x: x['orderTime'])
+        # 现在根据每个组中第一个条目的orderTime对所有组进行排序，如果组不为空
+        sorted_groups = sorted(groups, key=lambda g: g[0]['orderTime'] if g else float('inf'))
         return sorted_groups
 
     # 订单分组
@@ -830,8 +837,6 @@ class DemoPipeline:
             # 使用副本循环，因为可能会移除空的子列表
             # 创建每个子订单组的进程
             threads = []
-            print("防止在之前完成，先行进行停顿")
-            rospy.sleep(20) 
             # 每个迭代器对应一个已经排序的子列表
             for it in iterators[:]:
                 try:
