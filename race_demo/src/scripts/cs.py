@@ -463,7 +463,7 @@ class DemoPipeline:
                         print(f"car_sn:{car_sn}车上有电量充足的无人机，进入绑货物")
                         state = WorkState.MOVE_CARGO_IN_DRONE
                 print(f"car_sn:{car_sn},drone_sn:{drone_sn},waybill:{waybill['cargoParam']['index']}")
-                print(f"loading_pos:{loading_pos},\n takeoff_pos:{takeoff_pos}\n, landing_pos:{landing_pos}\n,flying_height:{flying_height}")
+                # print(f"loading_pos:{loading_pos},\n takeoff_pos:{takeoff_pos}\n, landing_pos:{landing_pos}\n,flying_height:{flying_height}")
             elif state == WorkState.MOVE_DRONE_ON_CAR:
                 MOVE_DRONE_ON_CAR_start = rospy.Time.now()
                 # 将无人机移动到车上
@@ -516,7 +516,7 @@ class DemoPipeline:
                     (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                 bind_cargo_id = drone_physical_status.bind_cargo_id
                 MOVE_CARGO_IN_DRONE_time = (rospy.Time.now() - MOVE_CARGO_IN_DRONE_start).to_sec()
-                print(f"car_sn:{car_sn},drone_sn:{drone_sn}:外卖订单bind_cargo_id{bind_cargo_id},绑外卖用时:{MOVE_CARGO_IN_DRONE_time}秒，开始进入移车环节")
+                print(f"car_sn:{car_sn},drone_sn:{drone_sn}:cargo_id:{cargo_id}; bind_cargo_id{bind_cargo_id}; 绑外卖用时:{MOVE_CARGO_IN_DRONE_time}秒，开始进入移车环节")
                 state = WorkState.MOVE_CAR_TO_LEAVING_POINT
             elif state == WorkState.MOVE_CAR_TO_LEAVING_POINT:
                 # 等待前一单无人机起飞完成
@@ -685,7 +685,6 @@ class DemoPipeline:
                 drone_physical_status = next(
                     (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                 drone_pos = drone_physical_status.pos.position
-                cargo_info = next((bill for bill in self.bills_status if bill.cargoIndex == bind_cargo_id), None)
                 if self.des_pos_reached(end_pos_2, drone_pos, 0.5):
                     back_time = (rospy.Time.now() - back_start_time).to_sec()
                     if not self.is_landing_blocked:
@@ -705,7 +704,7 @@ class DemoPipeline:
                     back_land_time = (rospy.Time.now() - back_start_time).to_sec()
                     print("********************")
                     print("以下打印无人机降落后信息")
-                    print(f"car_sn:{car_sn},drone_sn:{drone_sn}:waybill_cargo_id:{bind_cargo_id},loading_pos:{loading_pos}, takeoff_pos:{takeoff_pos}, landing_pos:{landing_pos},flying_height:{flying_height}")
+                    print(f"car_sn:{car_sn},drone_sn:{drone_sn}:waybill_cargo_id:{cargo_id},loading_pos:{loading_pos}, takeoff_pos:{takeoff_pos}, landing_pos:{landing_pos},flying_height:{flying_height}")
                     print(f"外卖送{bill_state}啦！！！！！")
                     print(f"前期准备工作花费的时间{pre_time}")
                     print(f"飞机送货耗时: {cargo_time} 秒")
