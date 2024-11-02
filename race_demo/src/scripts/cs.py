@@ -701,7 +701,7 @@ class DemoPipeline:
                     self.is_landing_blocked = False  # 重置标志位
 
                     # 获取货物信息
-                    cargo_info = next((bill for bill in self.bills_status if bill['cargoIndex'] == cargo_id), None)
+                    cargo_info = next((bill for bill in self.bills_status if bill.cargoIndex == cargo_id), None)
                     if cargo_info:
                         better_time_pa = cargo_info['betterTime']
                         order_time_pa = cargo_info['orderTime']
