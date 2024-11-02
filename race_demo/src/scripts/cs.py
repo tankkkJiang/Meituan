@@ -180,7 +180,7 @@ class DemoPipeline:
 
     # 飞机航线飞行函数
     def fly_one_route(self, drone_sn, route, speed, time_est, next_state, is_departure):
-        print(f"drone_sn:{drone_sn}:出发的无人机开始起飞")
+        print(f"drone_sn:{drone_sn}:无人机开始起飞")
         msg = UserCmdRequest()
         msg.peer_id = self.peer_id
         msg.task_guid = self.task_guid
@@ -401,14 +401,14 @@ class DemoPipeline:
     def dispatching(self, car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state):       
         flag = True
         with self.lock:
-            self.waybill_count += 1
-        print(f"订单数{self.waybill_count}: Begin to dispatch")
+            self.waybill_count_start += 1
+        print(f"订单数{self.waybill_count_start}: Begin to dispatch")
         while not rospy.is_shutdown():
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
-                if self.waybill_count > 1:
+                if self.waybill_count_start > 1:
                     print("正在等待前一单移车完成再开始订单...")
                     self.order_semaphore.acquire()  # 阻塞，等待前一单完成并释放信号量
-                print(f"订单数{self.waybill_count}：小车无人机开始进行初始化")
+                print(f"已开始的订单数{self.waybill_count_start}：小车无人机开始进行初始化")
                 dispatching_start_time = rospy.Time.now()
                 while True:
                     car_physical_status = next(
@@ -460,7 +460,7 @@ class DemoPipeline:
                         print(f"car_sn:{car_sn}车上有电量充足的无人机，进入绑货物")
                         print(f"car_sn:{car_sn}测试换电")
                         state = WorkState.DRONE_BATTERY_REPLACEMENT
-                        state = WorkState.MOVE_CARGO_IN_DRONE
+                        # state = WorkState.MOVE_CARGO_IN_DRONE
                 print(f"car_sn:{car_sn},drone_sn:{drone_sn},waybill:{waybill['cargoParam']['index']}")
                 print(f"loading_pos:{loading_pos},\n takeoff_pos:{takeoff_pos}\n, landing_pos:{landing_pos}\n,flying_height:{flying_height}")
             elif state == WorkState.MOVE_DRONE_ON_CAR:
@@ -517,7 +517,7 @@ class DemoPipeline:
                 state = WorkState.MOVE_CAR_TO_LEAVING_POINT
             elif state == WorkState.MOVE_CAR_TO_LEAVING_POINT:
                 # 等待前一单无人机起飞完成
-                if self.waybill_count > 1:
+                if self.waybill_count_start > 1:
                     print(f"car_sn:{car_sn}:等待前一单无人机起飞...")
                     self.drone_takeoff_semaphore.acquire()  # 阻塞，直到无人机成功起飞
                 # 小车搭载挂外卖的无人机到达起飞点
@@ -671,6 +671,7 @@ class DemoPipeline:
                     end_pos_2 = Position(landing_pos.x, landing_pos.y, landing_pos.z-5)
                     route = route + [end_pos_1,end_pos_2]
                     # 飞到降落点上空，等待降落
+                    rospy.sleep(1.0)
                     back_start_time = rospy.Time.now()
                     self.fly_one_route(
                         drone_sn, route, 10, 60, WorkState.DRONE_LANDING, is_departure=False) 
@@ -703,7 +704,8 @@ class DemoPipeline:
                     print(f"订单时间 orderTime: {waybill['orderTime']} - 毫秒戳")
                     print(f"最佳送达时间 betterTime: {waybill['betterTime']} - 毫秒戳")
                     print(f"超时时间 timeout: {waybill['timeout']} - 毫秒戳")
-                    print(f"总订单量{self.waybill_count }，当前的分数{self.score}")
+                    print(f"已开始的总订单量{self.waybill_count_start}")
+                    print(f"已完成的总订单量{self.waybill_count_finish}，当前的分数{self.score}")
                     print("无人机降落完成，允许小车继续移动。")
                     print("********************")
                     # print(f"看看当前事件是啥{self.events}")
@@ -741,7 +743,8 @@ class DemoPipeline:
         self.sys_init()
         print(self.state)
         self.test_map_query()
-        self.waybill_count = 0
+        self.waybill_count_start = 0
+        self.waybill_count_finish = 0
         # 无人机出生点
         birth_pos = Position(185,425,-16)
         # 装载点
@@ -835,7 +838,7 @@ class DemoPipeline:
         rospy.sleep(1.0)
         print(
             'Total waybill finished: ',
-            self.waybill_count,
+            self.waybill_count_finish,
             ', Total score: ',
             self.score)
 
