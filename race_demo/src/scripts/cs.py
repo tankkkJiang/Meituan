@@ -685,7 +685,7 @@ class DemoPipeline:
                     if not self.is_landing_blocked:
                         self.drone_landing_semaphore.acquire()  # 阻止小车移动
                         self.is_landing_blocked = True  # 标记信号量已经被获取
-                        print(f"降落信号量已获取，当前信号量值已减少，防止小车移动")
+                        print(f"car_sn:{car_sn},drone_sn:{drone_sn}:降落信号量已获取，当前信号量值已减少，防止小车移动")
                     if flag:
                         print(f"car_sn:{car_sn},drone_sn:{drone_sn}:飞机返回耗时: {back_time}秒")
                         flag = False
