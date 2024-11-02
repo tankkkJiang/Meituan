@@ -81,7 +81,7 @@ class DemoPipeline:
             '/panoramic_info',
             PanoramicInfo,
             self.panoramic_info_callback,
-            queue_size=10)
+            queue_size=1)
         self.map_client = rospy.ServiceProxy('query_voxel', QueryVoxel)
         # 读取配置文件和信息
         with open('/config/config.json', 'r') as file:
@@ -111,6 +111,7 @@ class DemoPipeline:
         self.drone_landing_semaphore = threading.Semaphore(1)  # 初始化为 1，表示初始时允许小车移动
         self.is_landing_blocked = False  # 用于避免重复获取降落信号量的标志位
         self.lock = threading.Lock()                     # 用于保护共享资源的锁
+        self.is_empty_car = False  # 新增，表示是否空车行走
 
     # 仿真回调函数，获取实时信息
     def panoramic_info_callback(self, panoramic_info):
@@ -119,7 +120,6 @@ class DemoPipeline:
         self.bills_status = panoramic_info.bills
         self.score = panoramic_info.score
         self.events = panoramic_info.events
-        self.is_empty_car = False  # 新增，表示是否空车行走
 
     # 系统初始化(按需)
     def sys_init(self):
@@ -685,6 +685,7 @@ class DemoPipeline:
                 drone_physical_status = next(
                     (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                 drone_pos = drone_physical_status.pos.position
+                cargo_info = next((bill for bill in self.bills_status if bill.cargoIndex == bind_cargo_id), None)
                 if self.des_pos_reached(end_pos_2, drone_pos, 0.5):
                     back_time = (rospy.Time.now() - back_start_time).to_sec()
                     if not self.is_landing_blocked:
