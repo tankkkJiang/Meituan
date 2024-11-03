@@ -415,62 +415,62 @@ class DemoPipeline:
         while not rospy.is_shutdown():
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
                 if self.waybill_count_start > 1 and  not self.is_empty_car:
-                    print(f"订单{waybill}正在等待前一单移车完成再开始订单...")
+                    print(f"订单{waybill['index']}正在等待前一单移车完成再开始订单...")
                     self.order_semaphore.acquire()  # (-1)阻塞，等待前一单完成并释放信号量
                 elif self.is_empty_car and self.waybill_count_start > 1:
                     self.is_empty_car = False  # 重置为空车状态
-                    print(f"重新开始的订单{waybill},上一轮空车移动，重新开始选择无人机小车")
-                print(f"已开始的订单数{self.waybill_count_start}, 当前订单{waybill}的小车无人机开始进行初始化")
+                    print(f"重新开始的订单{waybill['index']},上一轮空车移动，重新开始选择无人机小车")
+                print(f"已开始的订单数{self.waybill_count_start}, 当前订单{waybill['index']}的小车无人机开始进行初始化")
                 dispatching_start_time = rospy.Time.now()
                 while True:
                     car_physical_status = next(
                         (car for car in self.car_physical_status if self.des_pos_reached(car.pos.position, loading_pos, 1) and car.car_work_state == CarPhysicalStatus.CAR_READY), None)
                     if car_physical_status is not None:
-                        print(f"订单{waybill}找到小车")
+                        print(f"订单{waybill['index']}找到小车")
                         break
                     rospy.sleep(5)
                 car_sn = car_physical_status.sn 
                 drone_sn = car_physical_status.drone_sn
                 # 挑选无人机
                 if drone_sn == '':
-                    print(f"订单{waybill}, {car_sn}挑选无人机，当前小车没有无人机")
+                    print(f"订单{waybill['index']}, {car_sn}挑选无人机，当前小车没有无人机")
                     # 遍历无人机列表，挑选状态为 READY 且在出生地点的无人机
                     drone_physical_status = next(
                         (drone for drone in self.drone_physical_status if drone.drone_work_state == DronePhysicalStatus.READY and self.des_pos_reached(birth_pos, drone.pos.position, 0.5) and drone.remaining_capacity >= 30), None)
                     # 如果没有找到符合条件的无人机，直接返回 None
                     # 添加条件，不得悬挂
                     if drone_physical_status is None:
-                        print(f"订单{waybill}, {car_sn}没有找到合适的无人机，只能进行空车移动")
+                        print(f"订单{waybill['index']}, {car_sn}没有找到合适的无人机，只能进行空车移动")
                         self.is_empty_car = True  # 设置为空车行走
                         state = WorkState.MOVE_CAR_TO_LEAVING_POINT
                     else:
                         drone_sn = drone_physical_status.sn
-                        print(f"订单{waybill}, {car_sn}找到无人机{drone_sn}")
+                        print(f"订单{waybill['index']}, {car_sn}找到无人机{drone_sn}")
                         state = WorkState.MOVE_DRONE_ON_CAR
                 else:
-                    print(f"订单{waybill}, {car_sn}当前小车有无人机")
+                    print(f"订单{waybill['index']}, {car_sn}当前小车有无人机")
                     drone_physical_status = next(
                         (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                     if drone_physical_status.remaining_capacity < 30:
-                        print(f"订单{waybill}, {car_sn}当前小车无人机电量不足")
+                        print(f"订单{waybill['index']}, {car_sn}当前小车无人机电量不足")
                         # 挑选无人机，其状态是ready且在出生地点,电量充足
                         drone_physical_status = next(
                             (drone for drone in self.drone_physical_status if drone.drone_work_state == DronePhysicalStatus.READY and self.des_pos_reached(birth_pos, drone.pos.position, 0.5) and drone.remaining_capacity >= 30), None)
                         if drone_physical_status is None:
-                            print(f"订单{waybill}, {car_sn}其他合适的无人机也没电了，进入换电池")
+                            print(f"订单{waybill['index']}, {car_sn}其他合适的无人机也没电了，进入换电池")
                             state = WorkState.DRONE_BATTERY_REPLACEMENT
                         else:
                             # 回收飞机预计3s，挪合适飞机预计3s
                             self.drone_retrieve(
                                 drone_sn, car_sn, 3, WorkState.MOVE_DRONE_ON_CAR)
                             drone_sn = drone_physical_status.sn
-                            print(f"订单{waybill}, {car_sn}换合适的无人机{drone_sn}")
+                            print(f"订单{waybill['index']}, {car_sn}换合适的无人机{drone_sn}")
                             state = WorkState.MOVE_DRONE_ON_CAR
                     elif drone_physical_status.bind_cargo_id:  # 额外检查，防止挂两个货物
                         print(f"无人机{drone_sn}已绑定货物，可能会导致出错")
                         state = WorkState.MOVE_CARGO_IN_DRONE
                     else:
-                        print(f"订单{waybill}, car_sn:{car_sn}车上有电量充足的无人机，进入绑货物")
+                        print(f"订单{waybill['index']}, car_sn:{car_sn}车上有电量充足的无人机，进入绑货物")
                         state = WorkState.MOVE_CARGO_IN_DRONE
                 print(f"car_sn:{car_sn},drone_sn:{drone_sn},waybill:{waybill['cargoParam']['index']}")
                 # print(f"loading_pos:{loading_pos},\n takeoff_pos:{takeoff_pos}\n, landing_pos:{landing_pos}\n,flying_height:{flying_height}")
@@ -483,7 +483,7 @@ class DemoPipeline:
                 drone_physical_status = next(
                             (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                 if (self.des_pos_reached(loading_pos, car_pos, 1) and car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY) and drone_physical_status.drone_work_state == DronePhysicalStatus.READY and self.des_pos_reached(birth_pos, drone_physical_status.pos.position, 0.5):
-                    print(f"订单{waybill},car_sn:{car_sn},drone_sn:{drone_sn}:开始挪机")
+                    print(f"订单{waybill['index']},car_sn:{car_sn},drone_sn:{drone_sn}:开始挪机")
                     self.move_drone_on_car(
                         car_sn, drone_sn, 3.0, WorkState.MOVE_CARGO_IN_DRONE)
                     MOVE_DRONE_ON_CAR_time = (rospy.Time.now() - MOVE_DRONE_ON_CAR_start).to_sec()
@@ -497,7 +497,7 @@ class DemoPipeline:
                 car_pos = car_physical_status.pos.position
                 # 换电池
                 if(self.des_pos_reached(loading_pos, car_pos, 1) and car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY):
-                    print(f"订单{waybill},car_sn:{car_sn},drone_sn:{drone_sn}:换电池")
+                    print(f"订单{waybill['index']},car_sn:{car_sn},drone_sn:{drone_sn}:换电池")
                     self.battery_replacement(
                         drone_sn, 10,  WorkState.MOVE_CAR_TO_LEAVING_POINT)
                     drone_physical_status = next(
@@ -512,7 +512,7 @@ class DemoPipeline:
                     state = WorkState.MOVE_CARGO_IN_DRONE
             elif state == WorkState.MOVE_CARGO_IN_DRONE:
                 MOVE_CARGO_IN_DRONE_start = rospy.Time.now()            
-                print(f"订单{waybill},car_sn:{car_sn},drone_sn:{drone_sn}:开始绑外卖")
+                print(f"订单{waybill['index']},car_sn:{car_sn},drone_sn:{drone_sn}:开始绑外卖")
                 cargo_bind_time_ms = int(rospy.get_time() * 1000)
                 print(f"货物绑定时间戳: {cargo_bind_time_ms} 毫秒时间戳")
                 car_physical_status = next(
@@ -528,7 +528,7 @@ class DemoPipeline:
                 bind_cargo_id = drone_physical_status.bind_cargo_id
 
                 if bind_cargo_id == 0:
-                    print(f"订单{waybill},bind_cargoID = 0, 还未到orderTime, 回收无人机，开始进入移车环节")
+                    print(f"订单{waybill['index']},bind_cargoID = 0, 还未到orderTime, 回收无人机，开始进入移车环节")
                     # 回收飞机预计3s，挪合适飞机预计3s
                     self.drone_retrieve(
                         drone_sn, car_sn, 3, WorkState.MOVE_DRONE_ON_CAR)
@@ -595,17 +595,17 @@ class DemoPipeline:
                     drone_physical_status = next(
                         (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                 MOVE_CAR_TO_LEAVING_POINT_time = (rospy.Time.now() - MOVE_CAR_TO_LEAVING_POINT_start).to_sec()
-                print(f"订单{waybill},小车移动完毕, 小车移动时间为{MOVE_CAR_TO_LEAVING_POINT_time}")
+                print(f"订单{waybill['index']},小车移动完毕, 小车移动时间为{MOVE_CAR_TO_LEAVING_POINT_time}")
 
                 start_to_move_finish_time = (rospy.Time.now() - dispatching_start_time).to_sec()
-                print(f"订单{waybill},car_sn:{car_sn},drone_sn:{drone_sn}:从订单开始到移车结束: {start_to_move_finish_time}")
+                print(f"订单{waybill['index']},car_sn:{car_sn},drone_sn:{drone_sn}:从订单开始到移车结束: {start_to_move_finish_time}")
                 if start_to_move_finish_time < Moving_car_cycle:
                     rospy.sleep(Moving_car_cycle-start_to_move_finish_time)
                     print(f"等待{Moving_car_cycle-start_to_move_finish_time}秒才释放下一单的开始/空单重复, 保证一个周期{Moving_car_cycle}s")
 
                 if self.is_empty_car:
                     # 空车情况
-                    print(f"订单{waybill},car_sn:{car_sn}空车行走移动完成，回到选择无人机的状态，不用释放order信号量")
+                    print(f"订单{waybill['index']},car_sn:{car_sn}空车行走移动完成，回到选择无人机的状态，不用释放order信号量")
                     self.drone_takeoff_semaphore.release() # 释放起飞信号量(+1)
                     self.drone_landing_semaphore.release() # 释放降落信号量，以便下一个无人机可以继续降落(+1)
                     state = WorkState.SELACT_WAYBILL_CAR_DRONE
