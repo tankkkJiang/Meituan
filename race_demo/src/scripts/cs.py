@@ -414,16 +414,19 @@ class DemoPipeline:
         print(f"订单数{self.waybill_count_start}: Begin to dispatch")
         while not rospy.is_shutdown():
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
-                if self.waybill_count_start > 1:
+                if self.is_empty_car:
+                    self.is_empty_car = False  # 重置为空车状态
+                    print(f"重新开始的订单{waybill},上一轮空车移动，重新开始选择无人机小车")
+                elif self.waybill_count_start > 1:
                     print("正在等待前一单移车完成再开始订单...")
-                    self.order_semaphore.acquire()  # 阻塞，等待前一单完成并释放信号量
-                print(f"已开始的订单数{self.waybill_count_start}：小车无人机开始进行初始化")
+                    self.order_semaphore.acquire()  # (-1)阻塞，等待前一单完成并释放信号量
+                print(f"已开始的订单数{self.waybill_count_start}：订单{waybill}的小车无人机开始进行初始化")
                 dispatching_start_time = rospy.Time.now()
                 while True:
                     car_physical_status = next(
                         (car for car in self.car_physical_status if self.des_pos_reached(car.pos.position, loading_pos, 1) and car.car_work_state == CarPhysicalStatus.CAR_READY), None)
                     if car_physical_status is not None:
-                        print("找到小车")
+                        print(f"订单{waybill}找到小车")
                         break
                     rospy.sleep(5)
                 car_sn = car_physical_status.sn 
@@ -525,21 +528,21 @@ class DemoPipeline:
                 bind_cargo_id = drone_physical_status.bind_cargo_id
 
                 if bind_cargo_id == 0:
-                    print("bind_cargoID = 0, 还未到orderTime, 回收无人机")
+                    print("bind_cargoID = 0, 还未到orderTime, 回收无人机，开始进入移车环节")
                     # 回收飞机预计3s，挪合适飞机预计3s
                     self.drone_retrieve(
                         drone_sn, car_sn, 3, WorkState.MOVE_DRONE_ON_CAR)
                     self.is_empty_car = True  # 设置为空车行走
                     state = WorkState.MOVE_CAR_TO_LEAVING_POINT
-
-                MOVE_CARGO_IN_DRONE_time = (rospy.Time.now() - MOVE_CARGO_IN_DRONE_start).to_sec()
-                print(f"car_sn:{car_sn},drone_sn:{drone_sn}:cargo_id:{cargo_id}; bind_cargo_id:{bind_cargo_id}; 绑外卖用时:{MOVE_CARGO_IN_DRONE_time}秒，开始进入移车环节")
-                state = WorkState.MOVE_CAR_TO_LEAVING_POINT
+                else:
+                    MOVE_CARGO_IN_DRONE_time = (rospy.Time.now() - MOVE_CARGO_IN_DRONE_start).to_sec()
+                    print(f"car_sn:{car_sn},drone_sn:{drone_sn}:cargo_id:{cargo_id}; bind_cargo_id:{bind_cargo_id}; 绑外卖用时:{MOVE_CARGO_IN_DRONE_time}秒，开始进入移车环节")
+                    state = WorkState.MOVE_CAR_TO_LEAVING_POINT
             elif state == WorkState.MOVE_CAR_TO_LEAVING_POINT:
                 # 等待前一单无人机起飞完成
                 if self.waybill_count_start > 1:
                     print(f"car_sn:{car_sn}:等待前一单无人机起飞...")
-                    self.drone_takeoff_semaphore.acquire()  # 阻塞，直到无人机成功起飞
+                    self.drone_takeoff_semaphore.acquire()  # 阻塞，直到无人机成功起飞(-1)
                 print(f"car_sn:{car_sn}:等待前一单无人机降落...")
                 self.drone_landing_semaphore.acquire()  # 阻塞，直到降落信号量被释放(-1)
 
@@ -603,9 +606,8 @@ class DemoPipeline:
                 if self.is_empty_car:
                     # 空车情况
                     print(f"car_sn:{car_sn}空车行走移动完成，回到选择无人机的状态，不用释放order信号量")
-                    self.is_empty_car = False  # 重置为空车状态
-                    self.drone_takeoff_semaphore.release()
-                    self.drone_landing_semaphore.release() # 释放降落信号量，以便下一个小车可以继续降落(+1)
+                    self.drone_takeoff_semaphore.release() # 释放起飞信号量
+                    self.drone_landing_semaphore.release() # 释放降落信号量，以便下一个无人机可以继续降落(+1)
                     state = WorkState.SELACT_WAYBILL_CAR_DRONE
 
                 self.order_semaphore.release()         # 释放信号量，允许下一单开始，可以实现几秒处理一单
