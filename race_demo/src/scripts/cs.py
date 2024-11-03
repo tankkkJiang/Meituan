@@ -112,7 +112,6 @@ class DemoPipeline:
         self.drone_landing_semaphore = threading.Semaphore(1)  # 初始化为 1，表示初始时允许小车移动
         self.is_landing_blocked = False  # 用于避免重复获取降落信号量的标志位
         self.lock = threading.Lock()                     # 用于保护共享资源的锁
-        self.is_empty_car = False  # 新增，表示是否空车行走
 
     # 仿真回调函数，获取实时信息
     def panoramic_info_callback(self, panoramic_info):
@@ -407,18 +406,18 @@ class DemoPipeline:
         return groups
     
     # 调度小车和无人机完成订单
-    def dispatching(self, car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state):       
+    def dispatching(self, car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car):       
         flag = True
         with self.lock:
             self.waybill_count_start += 1
-        print(f"订单数{self.waybill_count_start}: Begin to dispatch, 还未进入选车机")
+        print(f"已开始的订单数{self.waybill_count_start}: Begin to dispatch, 还未进入选车机")
         while not rospy.is_shutdown():
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
-                if self.waybill_count_start > 1 and  not self.is_empty_car:
+                if self.waybill_count_start > 1 and  not is_empty_car:
                     print(f"订单{waybill['index']}正在等待前一单移车完成再开始订单...")
                     self.order_semaphore.acquire()  # (-1)阻塞，等待前一单完成并释放信号量
-                elif self.is_empty_car and self.waybill_count_start > 1:
-                    self.is_empty_car = False  # 重置为空车状态
+                elif is_empty_car and self.waybill_count_start > 1:
+                    is_empty_car = False  # 重置为空车状态
                     print(f"重新开始的订单{waybill['index']},上一轮空车移动，重新开始选择无人机小车")
                 print(f"已开始的订单数{self.waybill_count_start}, 当前订单{waybill['index']}的小车无人机开始进行初始化")
                 dispatching_start_time = rospy.Time.now()
@@ -441,7 +440,7 @@ class DemoPipeline:
                     # 添加条件，不得悬挂
                     if drone_physical_status is None:
                         print(f"订单{waybill['index']}, {car_sn}没有找到合适的无人机，只能进行空车移动")
-                        self.is_empty_car = True  # 设置为空车行走
+                        is_empty_car = True  # 设置为空车行走
                         state = WorkState.MOVE_CAR_TO_LEAVING_POINT
                     else:
                         drone_sn = drone_physical_status.sn
@@ -532,7 +531,7 @@ class DemoPipeline:
                     # 回收飞机预计3s，挪合适飞机预计3s
                     self.drone_retrieve(
                         drone_sn, car_sn, 3, WorkState.MOVE_DRONE_ON_CAR)
-                    self.is_empty_car = True  # 设置为空车行走
+                    is_empty_car = True  # 设置为空车行走
                     state = WorkState.MOVE_CAR_TO_LEAVING_POINT
                 else:
                     MOVE_CARGO_IN_DRONE_time = (rospy.Time.now() - MOVE_CARGO_IN_DRONE_start).to_sec()
@@ -603,7 +602,7 @@ class DemoPipeline:
                     rospy.sleep(Moving_car_cycle-start_to_move_finish_time)
                     print(f"等待{Moving_car_cycle-start_to_move_finish_time}秒才释放下一单的开始/空单重复, 保证一个周期{Moving_car_cycle}s")
 
-                if self.is_empty_car:
+                if is_empty_car:
                     # 空车情况
                     print(f"订单{waybill['index']},car_sn:{car_sn}空车行走移动完成，回到选择无人机的状态，不用释放order信号量")
                     self.drone_takeoff_semaphore.release() # 释放起飞信号量(+1)
@@ -856,9 +855,11 @@ class DemoPipeline:
                     print("********************")
                     # 初始化ros变量
                     state = WorkState.SELACT_WAYBILL_CAR_DRONE
+                    # 在 running() 方法中为每个线程初始化 is_empty_car
+                    is_empty_car = False  # 初始化为 False，表示默认不是空车
                     thread = threading.Thread(
                         target=self.dispatching, 
-                        args=(car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state)
+                        args=(car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car)
                     )
                     threads.append(thread)
                     thread.start()
