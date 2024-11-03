@@ -616,8 +616,8 @@ class DemoPipeline:
                     print(f"订单{waybill['index']},car_sn:{car_sn}空车行走移动完成，回到选择无人机的状态，不用释放order信号量")
                     self.drone_takeoff_semaphore.release() # 释放起飞信号量(+1)
                     self.drone_landing_semaphore.release() # 释放降落信号量，以便下一个无人机可以继续降落(+1)
-                    if bind_cargo_attempts == 2:
-                        # 超时情况，放弃处理
+                    if bind_cargo_attempts == 1:
+                        # 未到/超时情况，放弃处理，否则连锁反应
                         self.order_semaphore.release()  # 释放信号量，允许下一单开始
                         break
                     state = WorkState.SELACT_WAYBILL_CAR_DRONE
