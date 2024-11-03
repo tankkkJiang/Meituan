@@ -599,53 +599,52 @@ class DemoPipeline:
                 if start_to_move_finish_time < Moving_car_cycle:
                     rospy.sleep(Moving_car_cycle-start_to_move_finish_time)
                     print(f"等待{Moving_car_cycle-start_to_move_finish_time}秒才释放下一单的开始, 保证一个周期{Moving_car_cycle}s")
-                self.order_semaphore.release()         # 释放信号量，允许下一单开始，可以实现几秒处理一单
-                self.drone_landing_semaphore.release() # 释放降落信号量，以便下一个小车可以继续降落(+1)
-                # rospy.sleep(3)
-                state = WorkState.RELEASE_DRONE_OUT
-            elif state == WorkState.RELEASE_DRONE_OUT:
+
                 if self.is_empty_car:
                     # 空车情况
-                    print(f"car_sn:{car_sn}空车行走移动完成，回到选择无人机的状态，主动释放起飞锁")
-                    self.drone_takeoff_semaphore.release()
-                    # 等待5个移动周期，重回订单初始化
-                    rospy.sleep(5*Moving_car_cycle)
+                    print(f"car_sn:{car_sn}空车行走移动完成，回到选择无人机的状态，不用释放order信号量")
                     self.is_empty_car = False  # 重置为空车状态
+                    self.drone_takeoff_semaphore.release()
+                    self.drone_landing_semaphore.release() # 释放降落信号量，以便下一个小车可以继续降落(+1)
                     state = WorkState.SELACT_WAYBILL_CAR_DRONE
-                else:
-                    # 非空车情况：放飞无人机
-                    # 查询无人机当前的位置
-                    car_physical_status = next(
-                        (car for car in self.car_physical_status if car.sn == car_sn), None)
-                    drone_physical_status = next(
-                            (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
-                    drone_pos = drone_physical_status.pos.position
-                    # 判断无人机是否到达起飞地点
-                    if (self.des_pos_reached(drone_pos, takeoff_pos, 1) and car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY):
-                        print(f"car_sn:{car_sn},drone_sn:{drone_sn}:准备放飞无人机")
-                        pre_time = (rospy.Time.now() - dispatching_start_time).to_sec()
-                        print(f"car_sn:{car_sn},drone_sn:{drone_sn}:前期准备工作（到放飞无人机）花费的时间{pre_time}")
-                        start_pos = (drone_pos.x, drone_pos.y, flying_height)
-                        middle_pos = (
-                            waybill['targetPosition']['x'], waybill['targetPosition']['y'], flying_height)
-                        start_to_middle_route = navigate_with_astar(start_pos, middle_pos, step_size=5, threshold=5)
-                        print(f"car_sn:{car_sn},drone_sn:{drone_sn}:路线{start_to_middle_route}")
-                        # 将每个路径点转换为 Position 对象
-                        position_list = [Position(x, y, z) for (x, y, z) in start_to_middle_route]
-                        end_pos = Position(
-                            waybill['targetPosition']['x'],
-                            waybill['targetPosition']['y'],
-                            waybill['targetPosition']['z']-5)
-                        route = position_list + [end_pos]
-                        # 计算总距离
-                        total_distance = 0
-                        for i in range(1, len(route)):
-                            total_distance += self.calculate_distance(route[i-1], route[i])
-                        # 无人机按照路径飞行
-                        takeoff_time = rospy.Time.now()
-                        self.fly_one_route(
-                            drone_sn, route, 10.0, 60, WorkState.RELEASE_CARGO, is_departure=True)
-                        state = WorkState.RELEASE_CARGO
+
+                self.order_semaphore.release()         # 释放信号量，允许下一单开始，可以实现几秒处理一单
+                self.drone_landing_semaphore.release() # 释放降落信号量，以便下一个小车可以继续降落(+1)
+                state = WorkState.RELEASE_DRONE_OUT
+            elif state == WorkState.RELEASE_DRONE_OUT:
+                # 非空车情况：放飞无人机
+                # 查询无人机当前的位置
+                car_physical_status = next(
+                    (car for car in self.car_physical_status if car.sn == car_sn), None)
+                drone_physical_status = next(
+                        (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
+                drone_pos = drone_physical_status.pos.position
+                # 判断无人机是否到达起飞地点
+                if (self.des_pos_reached(drone_pos, takeoff_pos, 1) and car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY):
+                    print(f"car_sn:{car_sn},drone_sn:{drone_sn}:准备放飞无人机")
+                    pre_time = (rospy.Time.now() - dispatching_start_time).to_sec()
+                    print(f"car_sn:{car_sn},drone_sn:{drone_sn}:前期准备工作（到放飞无人机）花费的时间{pre_time}")
+                    start_pos = (drone_pos.x, drone_pos.y, flying_height)
+                    middle_pos = (
+                        waybill['targetPosition']['x'], waybill['targetPosition']['y'], flying_height)
+                    start_to_middle_route = navigate_with_astar(start_pos, middle_pos, step_size=5, threshold=5)
+                    print(f"car_sn:{car_sn},drone_sn:{drone_sn}:路线{start_to_middle_route}")
+                    # 将每个路径点转换为 Position 对象
+                    position_list = [Position(x, y, z) for (x, y, z) in start_to_middle_route]
+                    end_pos = Position(
+                        waybill['targetPosition']['x'],
+                        waybill['targetPosition']['y'],
+                        waybill['targetPosition']['z']-5)
+                    route = position_list + [end_pos]
+                    # 计算总距离
+                    total_distance = 0
+                    for i in range(1, len(route)):
+                        total_distance += self.calculate_distance(route[i-1], route[i])
+                    # 无人机按照路径飞行
+                    takeoff_time = rospy.Time.now()
+                    self.fly_one_route(
+                        drone_sn, route, 10.0, 60, WorkState.RELEASE_CARGO, is_departure=True)
+                    state = WorkState.RELEASE_CARGO
             elif state == WorkState.RELEASE_CARGO:
                 des_pos = Position(
                     waybill['targetPosition']['x'],
