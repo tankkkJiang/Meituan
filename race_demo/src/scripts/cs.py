@@ -509,7 +509,14 @@ class DemoPipeline:
                     state = WorkState.MOVE_CARGO_IN_DRONE
             elif state == WorkState.MOVE_CARGO_IN_DRONE:
                 MOVE_CARGO_IN_DRONE_start = rospy.Time.now()
-                print(f"car_sn:{car_sn},drone_sn:{drone_sn}:绑外卖")
+
+                MOVE_CARGO_IN_DRONE_start_time = (rospy.Time.now() - dispatching_start_time).to_sec()
+                if MOVE_CARGO_IN_DRONE_start_time < 10:
+                    rospy.sleep(10-MOVE_CARGO_IN_DRONE_start_time)
+                    print("拖延绑外卖时间，尽量够到orderTime")
+
+                
+                print(f"car_sn:{car_sn},drone_sn:{drone_sn}:开始绑外卖")
                 cargo_bind_time_ms = int(rospy.get_time() * 1000)
                 print(f"货物绑定时间戳: {cargo_bind_time_ms} 毫秒时间戳")
                 car_physical_status = next(
@@ -518,6 +525,16 @@ class DemoPipeline:
                 # 挂外卖
                 # 从订单信息waybill中提取对应的外卖ID
                 cargo_id = waybill['cargoParam']['index']
+
+                if cargo_id == 0:
+                    print("还未到orderTime，回收无人机")
+                    # 回收飞机预计3s，挪合适飞机预计3s
+                    self.drone_retrieve(
+                        drone_sn, car_sn, 3, WorkState.MOVE_DRONE_ON_CAR)
+                    self.is_empty_car = True  # 设置为空车行走
+                    state = WorkState.MOVE_CAR_TO_LEAVING_POINT
+
+
                 self.move_cargo_in_drone(cargo_id, drone_sn, 10.0)
                 drone_physical_status = next(
                     (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
