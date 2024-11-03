@@ -510,10 +510,10 @@ class DemoPipeline:
             elif state == WorkState.MOVE_CARGO_IN_DRONE:
                 MOVE_CARGO_IN_DRONE_start = rospy.Time.now()
 
-                MOVE_CARGO_IN_DRONE_start_time = (rospy.Time.now() - dispatching_start_time).to_sec()
-                if MOVE_CARGO_IN_DRONE_start_time < 10:
-                    rospy.sleep(10-MOVE_CARGO_IN_DRONE_start_time)
-                    print("拖延绑外卖时间，尽量够到orderTime")
+                # MOVE_CARGO_IN_DRONE_start_time = (rospy.Time.now() - dispatching_start_time).to_sec()
+                # if MOVE_CARGO_IN_DRONE_start_time < 10:
+                #     rospy.sleep(10-MOVE_CARGO_IN_DRONE_start_time)
+                #     print("拖延绑外卖时间，尽量够到orderTime")
 
                 
                 print(f"car_sn:{car_sn},drone_sn:{drone_sn}:开始绑外卖")
@@ -527,7 +527,7 @@ class DemoPipeline:
                 cargo_id = waybill['cargoParam']['index']
 
                 if cargo_id == 0:
-                    print("还未到orderTime，回收无人机")
+                    print("cargoID = 0, 还未到orderTime, 回收无人机")
                     # 回收飞机预计3s，挪合适飞机预计3s
                     self.drone_retrieve(
                         drone_sn, car_sn, 3, WorkState.MOVE_DRONE_ON_CAR)
@@ -547,6 +547,7 @@ class DemoPipeline:
                 if self.waybill_count_start > 1:
                     print(f"car_sn:{car_sn}:等待前一单无人机起飞...")
                     self.drone_takeoff_semaphore.acquire()  # 阻塞，直到无人机成功起飞
+                print(f"car_sn:{car_sn}:等待前一单无人机降落...")
                 self.drone_landing_semaphore.acquire()  # 阻塞，直到降落信号量被释放(-1)
 
                 # 移车估计用时15s
