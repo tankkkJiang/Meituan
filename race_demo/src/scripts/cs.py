@@ -94,7 +94,8 @@ class DemoPipeline:
         self.waybill_infos = self.config['taskParam']['waybillParamList']
         # 在派发前按 betterTime + timeout 排序waybills
         # self.waybill_infos.sort(key=lambda x: x['betterTime'] + x['timeout'])
-        self.waybill_infos.sort(key=lambda x: x['orderTime'])
+        # self.waybill_infos.sort(key=lambda x: x['orderTime'])
+        self.waybill_infos.sort(key=lambda x: x['orderTime'] + x['timeout'])
 
         self.unloading_cargo_stations = self.config['taskParam']['unloadingCargoStationList']
         self.drone_sn_list = [drone['droneSn'] for drone in self.drone_infos]
@@ -376,11 +377,18 @@ class DemoPipeline:
         # # 现在根据每个组中第一个条目的 'betterTime' + 'timeout' 对所有组进行排序，如果组不为空
         # sorted_groups = sorted(groups, key=lambda g: g[0]['betterTime'] + g[0]['timeout'] if g else float('inf'))
 
-        # 在每个组内按orderTime进行排序
+        # # 在每个组内按orderTime进行排序
+        # for group in groups:
+        #     group.sort(key=lambda x: x['orderTime'])
+        # # 现在根据每个组中第一个条目的orderTime对所有组进行排序，如果组不为空
+        # sorted_groups = sorted(groups, key=lambda g: g[0]['orderTime'] if g else float('inf'))
+
+        # 在每个组内按 orderTime + timeout 进行排序
         for group in groups:
-            group.sort(key=lambda x: x['orderTime'])
-        # 现在根据每个组中第一个条目的orderTime对所有组进行排序，如果组不为空
-        sorted_groups = sorted(groups, key=lambda g: g[0]['orderTime'] if g else float('inf'))
+            group.sort(key=lambda x: x['orderTime'] + x['timeout'])
+
+        # 现在根据每个组中第一个条目的 orderTime + timeout 对所有组进行排序，如果组不为空
+        sorted_groups = sorted(groups, key=lambda g: g[0]['orderTime'] + g[0]['timeout'] if g else float('inf'))
         return sorted_groups
 
     # 订单分组
@@ -406,7 +414,7 @@ class DemoPipeline:
         return groups
     
     # 调度小车和无人机完成订单
-    def dispatching(self, car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car):       
+    def dispatching(self, car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car, bind_cargo_attempts):       
         flag = True
         with self.lock:
             self.waybill_count_start += 1
@@ -527,7 +535,7 @@ class DemoPipeline:
                 bind_cargo_id = drone_physical_status.bind_cargo_id
 
                 if bind_cargo_id == 0:
-                    print(f"订单{waybill['index']},bind_cargoID = 0, 还未到orderTime, 回收无人机，开始进入移车环节")
+                    print(f"订单{waybill['index']},bind_cargoID = 0, 未到orderTime/超过timeout, 回收无人机，开始进入移车环节")
                     # 回收飞机预计3s，挪合适飞机预计3s
                     self.drone_retrieve(
                         drone_sn, car_sn, 3, WorkState.MOVE_DRONE_ON_CAR)
@@ -604,9 +612,14 @@ class DemoPipeline:
 
                 if is_empty_car:
                     # 空车情况
+                    bind_cargo_attempts += 1
                     print(f"订单{waybill['index']},car_sn:{car_sn}空车行走移动完成，回到选择无人机的状态，不用释放order信号量")
                     self.drone_takeoff_semaphore.release() # 释放起飞信号量(+1)
                     self.drone_landing_semaphore.release() # 释放降落信号量，以便下一个无人机可以继续降落(+1)
+                    if bind_cargo_attempts == 2:
+                        # 超时情况，放弃处理
+                        self.order_semaphore.release()  # 释放信号量，允许下一单开始
+                        break
                     state = WorkState.SELACT_WAYBILL_CAR_DRONE
                 else:
                     self.order_semaphore.release()         # 释放信号量，允许下一单开始，可以实现几秒处理一单
@@ -856,10 +869,11 @@ class DemoPipeline:
                     # 初始化ros变量
                     state = WorkState.SELACT_WAYBILL_CAR_DRONE
                     # 在 running() 方法中为每个线程初始化 is_empty_car
-                    is_empty_car = False  # 初始化为 False，表示默认不是空车
+                    is_empty_car = False     # 初始化为 False，表示默认不是空车
+                    bind_cargo_attempts = 0  # 用于跟踪绑定货物的尝试次数
                     thread = threading.Thread(
                         target=self.dispatching, 
-                        args=(car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car)
+                        args=(car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car, bind_cargo_attempts)
                     )
                     threads.append(thread)
                     thread.start()
