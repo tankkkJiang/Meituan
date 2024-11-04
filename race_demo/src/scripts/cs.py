@@ -792,7 +792,6 @@ class DemoPipeline:
 
         print(self.state)
         self.sys_init()
-        running_start_time_ms = int(rospy.get_time() * 1000)
         print(self.state)
         self.test_map_query()
         self.waybill_count_start = 0
@@ -844,6 +843,9 @@ class DemoPipeline:
         # 等待所有线程完成
         for thread in threads:
             thread.join()
+        
+        running_start_time_ms = int(rospy.get_time() * 1000)
+
         rospy.sleep(20)
         print("用时20s初始化完成")
         # 确保在循环开始前子列表已经按照betterTime+timeout排序
