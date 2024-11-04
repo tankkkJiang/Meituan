@@ -84,7 +84,7 @@ class DemoPipeline:
             queue_size=100)
         self.map_client = rospy.ServiceProxy('query_voxel', QueryVoxel)
         # 读取配置文件和信息
-        self.running_start_time_ms = int(rospy.get_time() * 1000)
+        self.running_start_time_ms = 0
         print(f"开始的毫秒时间戳 - {self.running_start_time_ms}")
         with open('/config/config.json', 'r') as file:
             self.config = json.load(file)
@@ -426,11 +426,21 @@ class DemoPipeline:
         print(f"已开始的订单数{self.waybill_count_start}: Begin to dispatch, 还未进入选车机")
         while not rospy.is_shutdown():
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
-                order_status = next(
-                    (order for order in self.bills_status if order.index == bill_index), None)
+                if self.waybill_count_start == 1:
+                    order_status = next(
+                        (order for order in self.bills_status if order.index == 1), None)
+                    # 打印订单状态检查
+                    if order_status is not None:
+                        print(f"初始化订单: Found order status: {order_status}")
+                        better_time_ms = order_status.betterTime
+                        print(f"初始化订单：betterTime for order index 1: {better_time_ms}")
+                        self.running_start_time_ms = better_time_ms - waybill['betterTime']
+                        print(f"设置启动时间戳 Running start time (ms): {self.running_start_time_ms}")
+                    else:
+                        print("Order with index 1 not found.")
                 
                 select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
-                if select_start_time_ms < waybill['orderTime'] or select_start_time_ms > (waybill['timeout']-15000):
+                if select_start_time_ms < waybill['orderTime'] or select_start_time_ms > (waybill['timeout']):
                     # 丢弃这一单，直接开始下一单
                     print(f"当前订单{waybill['index']}不符合绑定要求，直接放弃该订单，释放下一单")
                     self.loss_waybill +=1
