@@ -883,45 +883,48 @@ class DemoPipeline:
             threads = []
             # 每个迭代器对应一个已经排序的子列表
             for it in iterators[:]:
-                try:
-                    # 尝试从当前迭代器中提取一个订单
-                    print("********************")
-                    print(f"看看当前事件是啥{self.events}")
-                    waybill = next(it)
-                    print("当前时间(秒):", rospy.get_time() - running_start_time)
-                    print(f"提取订单-waybill如下:{waybill['index']}")
-                    # 初始化ros变量
-                    state = WorkState.SELACT_WAYBILL_CAR_DRONE
-                    # 在 running() 方法中为每个线程初始化 is_empty_car
-                    is_empty_car = False     # 初始化为 False，表示默认不是空车
-                    bind_cargo_attempts = 0  # 用于跟踪绑定货物的尝试次数
-
-                    select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
-                    if self.waybill_count_start > 1 and (select_start_time_ms < (waybill['orderTime']) or select_start_time_ms > (waybill['timeout']-100000)):
-                        # 丢弃这一单，直接开始下一单
-                        self.loss_waybill += 1
-                        print(f"当前订单{waybill['index']}不符合绑定要求，直接放弃该订单，开始提取下一单")
-                        print(f"当前订单提取时间: {select_start_time_ms}")
-                        print(f"订单时间 orderTime: {waybill['orderTime']} - 毫秒戳")
-                        print(f"最佳送达时间 betterTime: {waybill['betterTime']} - 毫秒戳")
-                        print(f"超时时间 timeout: {waybill['timeout']} - 毫秒戳")
-                        # rospy.sleep(1)
-                        continue
-                    else:
-                        print(f"当前订单{waybill['index']}符合绑定要求，开启处理线程")
+                while True:  # 在每个迭代器中使用 while 循环
+                    try:
+                        # 尝试从当前迭代器中提取一个订单
                         print("********************")
-                        thread = threading.Thread(
-                            target=self.dispatching, 
-                            args=(car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car, bind_cargo_attempts)
-                        )
-                        threads.append(thread)
-                        thread.start()
-                        rospy.sleep(Moving_car_cycle+2)     # 每多少秒周期提取并处理一单订单
-                        if self.waybill_count_start == 1:
-                            rospy.sleep(2)
-                except StopIteration:
-                    # 如果迭代器已经耗尽，从列表中移除
-                    iterators.remove(it)
+                        print(f"看看当前事件是啥{self.events}")
+                        waybill = next(it)
+                        print("当前时间(秒):", rospy.get_time() - running_start_time)
+                        print(f"提取订单-waybill如下:{waybill['index']}")
+                        # 初始化ros变量
+                        state = WorkState.SELACT_WAYBILL_CAR_DRONE
+                        # 在 running() 方法中为每个线程初始化 is_empty_car
+                        is_empty_car = False     # 初始化为 False，表示默认不是空车
+                        bind_cargo_attempts = 0  # 用于跟踪绑定货物的尝试次数
+
+                        select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
+                        if self.waybill_count_start > 1 and (select_start_time_ms < (waybill['orderTime']) or select_start_time_ms > (waybill['timeout']-100000)):
+                            # 丢弃这一单，直接开始下一单
+                            self.loss_waybill += 1
+                            print(f"当前订单{waybill['index']}不符合绑定要求，直接放弃该订单，开始提取下一单")
+                            print(f"当前订单提取时间: {select_start_time_ms}")
+                            print(f"订单时间 orderTime: {waybill['orderTime']} - 毫秒戳")
+                            print(f"最佳送达时间 betterTime: {waybill['betterTime']} - 毫秒戳")
+                            print(f"超时时间 timeout: {waybill['timeout']} - 毫秒戳")
+                            # rospy.sleep(1)
+                            continue
+                        else:
+                            print(f"当前订单{waybill['index']}符合绑定要求，开启处理线程")
+                            print("********************")
+                            thread = threading.Thread(
+                                target=self.dispatching, 
+                                args=(car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car, bind_cargo_attempts)
+                            )
+                            threads.append(thread)
+                            thread.start()
+                            rospy.sleep(Moving_car_cycle+2)     # 每多少秒周期提取并处理一单订单
+                            if self.waybill_count_start == 1:
+                                rospy.sleep(2)
+                        break  # 成功处理完一个订单后，退出内部循环
+                    except StopIteration:
+                        # 如果迭代器已经耗尽，从列表中移除
+                        iterators.remove(it)
+                        break
             # rospy.sleep(35.3)
             # # 等待所有线程完成
             # for thread in threads:
