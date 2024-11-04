@@ -765,7 +765,6 @@ class DemoPipeline:
     # 状态流转主函数
     def running(self):
         print("开始运行")
-        running_start_time_ms = int(rospy.get_time() * 1000)
         while self.car_physical_status is None:
             print("等待小车状态初始化...")
             rospy.sleep(1.0)  # 等待 1 秒钟再检查
@@ -793,6 +792,7 @@ class DemoPipeline:
 
         print(self.state)
         self.sys_init()
+        running_start_time_ms = int(rospy.get_time() * 1000)
         print(self.state)
         self.test_map_query()
         self.waybill_count_start = 0
