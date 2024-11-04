@@ -424,6 +424,14 @@ class DemoPipeline:
         with self.lock:
             self.waybill_count_start += 1
         print(f"已开始的订单数{self.waybill_count_start}: Begin to dispatch, 还未进入选车机")
+
+        if self.waybill_count_start > 1 and not is_empty_car:
+            print(f"订单{waybill['index']}正在等待前一单移车完成/放弃执行再开始订单...")
+            self.order_semaphore.acquire()  # (-1)阻塞，等待前一单完成并释放信号量
+        elif is_empty_car and self.waybill_count_start > 1:
+            is_empty_car = False  # 重置为空车状态
+            print(f"重新开始的订单{waybill['index']},上一轮空车移动，重新开始选择无人机小车")
+    
         while not rospy.is_shutdown():
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
                 if self.waybill_count_start == 1:
@@ -440,14 +448,7 @@ class DemoPipeline:
                     else:
                         print("Order with index not found.")
 
-                if self.waybill_count_start > 1 and  not is_empty_car:
-                    print(f"订单{waybill['index']}正在等待前一单移车完成/放弃执行再开始订单...")
-                    self.order_semaphore.acquire()  # (-1)阻塞，等待前一单完成并释放信号量
-                elif is_empty_car and self.waybill_count_start > 1:
-                    is_empty_car = False  # 重置为空车状态
-                    print(f"重新开始的订单{waybill['index']},上一轮空车移动，重新开始选择无人机小车")
-
-                print(f"订单{waybill['index']}前一单移车完成/放弃执行")
+                print(f"订单{waybill['index']}前一单移车完成/放弃执行/第一单开始")
                 select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
                 if select_start_time_ms < waybill['orderTime'] or select_start_time_ms > (waybill['timeout']):
                     # 丢弃这一单，直接开始下一单
@@ -909,7 +910,7 @@ class DemoPipeline:
                     )
                     threads.append(thread)
                     thread.start()
-                    rospy.sleep(Moving_car_cycle)     # 每多少秒周期提取并处理一单订单
+                    rospy.sleep(Moving_car_cycle/5)     # 每多少秒周期提取并处理一单订单
                 except StopIteration:
                     # 如果迭代器已经耗尽，从列表中移除
                     iterators.remove(it)
