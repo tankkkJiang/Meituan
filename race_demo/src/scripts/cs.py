@@ -124,6 +124,7 @@ class DemoPipeline:
         self.car_physical_status = panoramic_info.cars
         self.drone_physical_status = panoramic_info.drones
         self.bills_status = panoramic_info.bills
+        print(f"self bills status:{self.bills_status}")
         self.score = panoramic_info.score
         self.events = panoramic_info.events
 
