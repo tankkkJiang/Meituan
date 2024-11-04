@@ -459,7 +459,7 @@ class DemoPipeline:
                     if car_physical_status is not None:
                         print(f"订单{waybill['index']}找到小车")
                         break
-                    rospy.sleep(5)
+                    rospy.sleep(0.1)
                 car_sn = car_physical_status.sn 
                 drone_sn = car_physical_status.drone_sn
                 # 挑选无人机
@@ -595,8 +595,8 @@ class DemoPipeline:
                 # 检查小车是否处于运动状态
                 while True:
                     timeout += 1
-                    if timeout > 5:
-                        print("超过5s没有移动，重启循环点移动")
+                    if timeout > 6:
+                        print("超过3s没有移动，重启循环点移动")
                         self.move_car_to_target_pos(car_list)
                         timeout = -20
                     car_physical_status = next(
@@ -619,7 +619,7 @@ class DemoPipeline:
                             rospy.sleep(3)
                     else:
                         # print("小车未在运动状态，等待小车开始移动...")
-                        rospy.sleep(1)  # 等待一秒再检查小车状态
+                        rospy.sleep(0.5)  # 等待一秒再检查小车状态
 
                 while not car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
                     # print(f"car_sn:{car_sn}小车正在移动中...小车状态为:{car_physical_status.car_work_state}")
@@ -708,7 +708,7 @@ class DemoPipeline:
                     print(f"外卖送达 - car_sn:{car_sn},drone_sn:{drone_sn}:外卖送{bill_state}啦！！！！！cargo-time用时:{cargo_time}")
                     delivery_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
                     print(f"货物送达时间戳: {delivery_time_ms} 毫秒时间戳")
-                    waiting_time_1 = round(4 * (Moving_car_cycle+2) - cargo_time, 1)
+                    waiting_time_1 = round(4 * (Moving_car_cycle + 1) - cargo_time, 1)
                     rospy.sleep(waiting_time_1)
                     waiting_time_2 = waiting_time_1
                     rospy.sleep(waiting_time_2)
@@ -884,10 +884,14 @@ class DemoPipeline:
             # 每个迭代器对应一个已经排序的子列表
             for it in iterators[:]:
                 while True:  # 在每个迭代器中使用 while 循环
+                    if rospy.get_time() - running_start_time > 3600:
+                        # 打印总得分并退出循环
+                        print('超过3600秒，结束循环。')
+                        print('Total waybill finished:', self.waybill_count_finish, ', Total score:', self.score)
+                        break
                     try:
                         # 尝试从当前迭代器中提取一个订单
                         print("********************")
-                        print(f"看看当前事件是啥{self.events}")
                         waybill = next(it)
                         print("当前时间(秒):", rospy.get_time() - running_start_time)
                         print(f"提取订单-waybill如下:{waybill['index']}")
@@ -898,7 +902,7 @@ class DemoPipeline:
                         bind_cargo_attempts = 0  # 用于跟踪绑定货物的尝试次数
 
                         select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
-                        if self.waybill_count_start > 1 and (select_start_time_ms < (waybill['orderTime']) or select_start_time_ms > (waybill['timeout'] - 250000)):
+                        if self.waybill_count_start > 1 and select_start_time_ms > (select_start_time_ms < (waybill['orderTime']) or select_start_time_ms > (waybill['timeout'] - 250000)):
                             # 丢弃这一单，直接开始下一单
                             self.loss_waybill += 1
                             print(f"当前订单{waybill['index']}不符合绑定要求，直接放弃该订单，开始提取下一单")
@@ -910,6 +914,7 @@ class DemoPipeline:
                             continue
                         else:
                             print(f"当前订单{waybill['index']}符合绑定要求，开启处理线程")
+                            print(f"看看当前事件是啥{self.events}")
                             print("********************")
                             thread = threading.Thread(
                                 target=self.dispatching, 
@@ -917,7 +922,7 @@ class DemoPipeline:
                             )
                             threads.append(thread)
                             thread.start()
-                            rospy.sleep(Moving_car_cycle+2)     # 每多少秒周期提取并处理一单订单
+                            rospy.sleep(Moving_car_cycle+1)     # 每多少秒周期提取并处理一单订单
                             if self.waybill_count_start == 1:
                                 rospy.sleep(2)
                         break  # 成功处理完一个订单后，退出内部循环
