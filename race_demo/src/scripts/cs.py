@@ -84,7 +84,7 @@ class DemoPipeline:
             queue_size=100)
         self.map_client = rospy.ServiceProxy('query_voxel', QueryVoxel)
         # 读取配置文件和信息
-        self.running_start_time_ms = int(rospy.get_time() * 1000)
+        self.running_start_time_ms = int(rospy.get_time() * 1000) - 100000
         print(f"开始的毫秒时间戳 - {self.running_start_time_ms}")
         with open('/config/config.json', 'r') as file:
             self.config = json.load(file)
