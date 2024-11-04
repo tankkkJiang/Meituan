@@ -84,7 +84,7 @@ class DemoPipeline:
             queue_size=100)
         self.map_client = rospy.ServiceProxy('query_voxel', QueryVoxel)
         # 读取配置文件和信息
-        self.running_start_time_ms = int(rospy.get_time() * 1000) - 100000
+        self.running_start_time_ms = int(rospy.get_time() * 1000) - 100000 + 40000
         print(f"开始的毫秒时间戳 - {self.running_start_time_ms}")
         with open('/config/config.json', 'r') as file:
             self.config = json.load(file)
@@ -116,6 +116,7 @@ class DemoPipeline:
         self.drone_landing_semaphore = threading.Semaphore(1)  # 初始化为 1，表示初始时允许小车移动
         self.is_landing_blocked = False  # 用于避免重复获取降落信号量的标志位
         self.lock = threading.Lock()                     # 用于保护共享资源的锁
+        self.loss_waybill = 0
 
     # 仿真回调函数，获取实时信息
     def panoramic_info_callback(self, panoramic_info):
@@ -424,6 +425,14 @@ class DemoPipeline:
         print(f"已开始的订单数{self.waybill_count_start}: Begin to dispatch, 还未进入选车机")
         while not rospy.is_shutdown():
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
+                select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
+                if select_start_time_ms < waybill['orderTime'] or select_start_time_ms > waybill['timeout']:
+                    # 丢弃这一单，直接开始下一单
+                    print(f"当前订单{waybill['index']}不符合绑定要求，直接放弃该订单，释放下一单")
+                    self.loss_waybill +=1
+                    self.order_semaphore.release()         # 释放信号量，允许下一单开始
+                    break
+
                 if self.waybill_count_start > 1 and  not is_empty_car:
                     print(f"订单{waybill['index']}正在等待前一单移车完成再开始订单...")
                     self.order_semaphore.acquire()  # (-1)阻塞，等待前一单完成并释放信号量
@@ -539,7 +548,7 @@ class DemoPipeline:
                     (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                 bind_cargo_id = drone_physical_status.bind_cargo_id
 
-                if bind_cargo_id == -1:
+                if bind_cargo_id == 0:
                     print(f"订单{waybill['index']},bind_cargoID = 0, 未到orderTime/超过timeout, 回收无人机，开始进入移车环节")
                     # 回收飞机预计3s，挪合适飞机预计3s
                     self.drone_retrieve(
