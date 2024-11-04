@@ -97,8 +97,8 @@ class DemoPipeline:
         print(self.waybill_infos)
         # 在派发前按 betterTime + timeout 排序waybills
         # self.waybill_infos.sort(key=lambda x: x['betterTime'] + x['timeout'])
-        # self.waybill_infos.sort(key=lambda x: x['orderTime'])
-        self.waybill_infos.sort(key=lambda x: x['orderTime'] + x['timeout'])
+        self.waybill_infos.sort(key=lambda x: x['orderTime'])
+        # self.waybill_infos.sort(key=lambda x: x['orderTime'] + x['timeout'])
 
         self.unloading_cargo_stations = self.config['taskParam']['unloadingCargoStationList']
         self.drone_sn_list = [drone['droneSn'] for drone in self.drone_infos]
@@ -381,18 +381,18 @@ class DemoPipeline:
         # # 现在根据每个组中第一个条目的 'betterTime' + 'timeout' 对所有组进行排序，如果组不为空
         # sorted_groups = sorted(groups, key=lambda g: g[0]['betterTime'] + g[0]['timeout'] if g else float('inf'))
 
-        # # 在每个组内按orderTime进行排序
-        # for group in groups:
-        #     group.sort(key=lambda x: x['orderTime'])
-        # # 现在根据每个组中第一个条目的orderTime对所有组进行排序，如果组不为空
-        # sorted_groups = sorted(groups, key=lambda g: g[0]['orderTime'] if g else float('inf'))
-
-        # 在每个组内按 orderTime + timeout 进行排序
+        # 在每个组内按orderTime进行排序
         for group in groups:
-            group.sort(key=lambda x: x['orderTime'] + x['timeout'])
+            group.sort(key=lambda x: x['orderTime'])
+        # 现在根据每个组中第一个条目的orderTime对所有组进行排序，如果组不为空
+        sorted_groups = sorted(groups, key=lambda g: g[0]['orderTime'] if g else float('inf'))
 
-        # 现在根据每个组中第一个条目的 orderTime + timeout 对所有组进行排序，如果组不为空
-        sorted_groups = sorted(groups, key=lambda g: g[0]['orderTime'] + g[0]['timeout'] if g else float('inf'))
+        # # 在每个组内按 orderTime + timeout 进行排序
+        # for group in groups:
+        #     group.sort(key=lambda x: x['orderTime'] + x['timeout'])
+
+        # # 现在根据每个组中第一个条目的 orderTime + timeout 对所有组进行排序，如果组不为空
+        # sorted_groups = sorted(groups, key=lambda g: g[0]['orderTime'] + g[0]['timeout'] if g else float('inf'))
         return sorted_groups
 
     # 订单分组
