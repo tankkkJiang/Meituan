@@ -892,13 +892,17 @@ class DemoPipeline:
                     is_empty_car = False     # 初始化为 False，表示默认不是空车
                     bind_cargo_attempts = 0  # 用于跟踪绑定货物的尝试次数
 
-                    if self.waybill_count_start > 1:
-                        select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
-                        if select_start_time_ms < (waybill['orderTime'] - 15000) or select_start_time_ms > (waybill['timeout']-15000):
-                            # 丢弃这一单，直接开始下一单
-                            self.loss_waybill += 1
-                            print(f"当前订单{waybill['index']}不符合绑定要求，直接放弃该订单，开始提取下一单")
-                            continue
+                    select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
+                    if self.waybill_count_start > 1 and (select_start_time_ms < (waybill['orderTime'] - 15000) or select_start_time_ms > (waybill['timeout']-15000)):
+                        # 丢弃这一单，直接开始下一单
+                        self.loss_waybill += 1
+                        print(f"当前订单{waybill['index']}不符合绑定要求，直接放弃该订单，开始提取下一单")
+                        print(f"当前订单提取时间: {select_start_time_ms}")
+                        print(f"订单时间 orderTime: {waybill['orderTime']} - 毫秒戳")
+                        print(f"最佳送达时间 betterTime: {waybill['betterTime']} - 毫秒戳")
+                        print(f"超时时间 timeout: {waybill['timeout']} - 毫秒戳")
+                        rospy.sleep(1)
+                        continue
                     else:
                         print(f"当前订单{waybill['index']}符合绑定要求，开启处理线程")
                         print("********************")
