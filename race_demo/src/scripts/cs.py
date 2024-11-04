@@ -905,7 +905,7 @@ class DemoPipeline:
                     )
                     threads.append(thread)
                     thread.start()
-                    rospy.sleep(Moving_car_cycle)     # 每多少秒周期提取并处理一单订单
+                    rospy.sleep(Moving_car_cycle/5)     # 每多少秒周期提取并处理一单订单
                 except StopIteration:
                     # 如果迭代器已经耗尽，从列表中移除
                     iterators.remove(it)
