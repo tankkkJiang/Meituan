@@ -439,7 +439,15 @@ class DemoPipeline:
                         print(f"设置启动时间戳 Running start time (ms): {self.running_start_time_ms}")
                     else:
                         print("Order with index not found.")
-                
+
+                if self.waybill_count_start > 1 and  not is_empty_car:
+                    print(f"订单{waybill['index']}正在等待前一单移车完成/放弃执行再开始订单...")
+                    self.order_semaphore.acquire()  # (-1)阻塞，等待前一单完成并释放信号量
+                elif is_empty_car and self.waybill_count_start > 1:
+                    is_empty_car = False  # 重置为空车状态
+                    print(f"重新开始的订单{waybill['index']},上一轮空车移动，重新开始选择无人机小车")
+
+                print(f"订单{waybill['index']}前一单移车完成/放弃执行")
                 select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
                 if select_start_time_ms < waybill['orderTime'] or select_start_time_ms > (waybill['timeout']):
                     # 丢弃这一单，直接开始下一单
@@ -448,13 +456,9 @@ class DemoPipeline:
                     self.order_semaphore.release()         # 释放信号量，允许下一单开始
                     break
 
-                if self.waybill_count_start > 1 and  not is_empty_car:
-                    print(f"订单{waybill['index']}正在等待前一单移车完成再开始订单...")
-                    self.order_semaphore.acquire()  # (-1)阻塞，等待前一单完成并释放信号量
-                elif is_empty_car and self.waybill_count_start > 1:
-                    is_empty_car = False  # 重置为空车状态
-                    print(f"重新开始的订单{waybill['index']},上一轮空车移动，重新开始选择无人机小车")
-                print(f"已开始的订单数{self.waybill_count_start}, 当前订单{waybill['index']}的小车无人机开始进行初始化")
+                select_car_drone_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
+                print(f"经过{(select_car_drone_start_time_ms-select_start_time_ms)/1000}秒完成选择合适订单")
+                print(f"已开始的订单数{self.waybill_count_start}, 丢弃订单{self.loss_waybill}, 当前订单{waybill['index']}的小车无人机开始进行初始化")
                 dispatching_start_time = rospy.Time.now()
                 while True:
                     car_physical_status = next(
