@@ -84,6 +84,8 @@ class DemoPipeline:
             queue_size=100)
         self.map_client = rospy.ServiceProxy('query_voxel', QueryVoxel)
         # 读取配置文件和信息
+        self.running_start_time_ms = int(rospy.get_time() * 1000)
+        print(f"开始的毫秒时间戳 - {self.running_start_time_ms}")
         with open('/config/config.json', 'r') as file:
             self.config = json.load(file)
         self.drone_infos = self.config['taskParam']['droneParamList']
@@ -415,7 +417,7 @@ class DemoPipeline:
         return groups
     
     # 调度小车和无人机完成订单
-    def dispatching(self, car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car, bind_cargo_attempts, running_start_time_ms):       
+    def dispatching(self, car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car, bind_cargo_attempts):       
         flag = True
         with self.lock:
             self.waybill_count_start += 1
@@ -521,7 +523,7 @@ class DemoPipeline:
             elif state == WorkState.MOVE_CARGO_IN_DRONE:
                 MOVE_CARGO_IN_DRONE_start = rospy.Time.now()            
                 print(f"订单{waybill['index']},car_sn:{car_sn},drone_sn:{drone_sn}:开始绑外卖")
-                cargo_bind_time_ms = int(rospy.get_time() * 1000) - running_start_time_ms
+                cargo_bind_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
                 print(f"货物绑定时间戳: {cargo_bind_time_ms} 毫秒时间戳")
                 print(f"订单{waybill['index']}: 订单时间 orderTime: {waybill['orderTime']} - 毫秒戳")
                 print(f"订单{waybill['index']}: 超时时间 timeout: {waybill['timeout']} - 毫秒戳")
@@ -682,7 +684,7 @@ class DemoPipeline:
                     # print("********************")
                     # print("以下打印外卖送达后信息")
                     print(f"外卖送达 - car_sn:{car_sn},drone_sn:{drone_sn}:外卖送{bill_state}啦！！！！！cargo-time用时:{cargo_time}")
-                    delivery_time_ms = int(rospy.get_time() * 1000) - running_start_time_ms
+                    delivery_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
                     print(f"货物送达时间戳: {delivery_time_ms} 毫秒时间戳")
                     waiting_time_1 = round(4 * (Moving_car_cycle+1) - cargo_time, 1)
                     rospy.sleep(waiting_time_1)
@@ -843,9 +845,6 @@ class DemoPipeline:
         # 等待所有线程完成
         for thread in threads:
             thread.join()
-        
-        running_start_time_ms = int(rospy.get_time() * 1000)
-
         rospy.sleep(20)
         print("用时20s初始化完成")
         # 确保在循环开始前子列表已经按照betterTime+timeout排序
@@ -877,7 +876,7 @@ class DemoPipeline:
                     bind_cargo_attempts = 0  # 用于跟踪绑定货物的尝试次数
                     thread = threading.Thread(
                         target=self.dispatching, 
-                        args=(car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car, bind_cargo_attempts, running_start_time_ms)
+                        args=(car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car, bind_cargo_attempts)
                     )
                     threads.append(thread)
                     thread.start()
@@ -900,6 +899,5 @@ class DemoPipeline:
 
 
 if __name__ == '__main__':
-    print("tank333.py")
     race_demo = DemoPipeline()
     race_demo.running()
