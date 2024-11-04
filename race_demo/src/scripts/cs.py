@@ -123,7 +123,7 @@ class DemoPipeline:
         self.car_physical_status = panoramic_info.cars
         self.drone_physical_status = panoramic_info.drones
         self.bills_status = panoramic_info.bills
-        print(f"self bills status:{self.bills_status}")
+        # print(f"self bills status:{self.bills_status}")
         self.score = panoramic_info.score
         self.events = panoramic_info.events
 
@@ -427,6 +427,7 @@ class DemoPipeline:
         while not rospy.is_shutdown():
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
                 if self.waybill_count_start == 1:
+                    # 利用第一单获取准确的启动时间戳，存入共享self.running_start_time_ms中。
                     order_status = next(
                         (order for order in self.bills_status if order.index == waybill['index']), None)
                     # 打印订单状态检查
@@ -437,7 +438,7 @@ class DemoPipeline:
                         self.running_start_time_ms = better_time_ms - waybill['betterTime']
                         print(f"设置启动时间戳 Running start time (ms): {self.running_start_time_ms}")
                     else:
-                        print("Order with index 1 not found.")
+                        print("Order with index not found.")
                 
                 select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
                 if select_start_time_ms < waybill['orderTime'] or select_start_time_ms > (waybill['timeout']):
@@ -563,6 +564,7 @@ class DemoPipeline:
                 bind_cargo_id = drone_physical_status.bind_cargo_id
 
                 if bind_cargo_id == 0:
+                    # 以防万一，一般不会出现这种情况
                     print(f"订单{waybill['index']},bind_cargoID = 0, 未到orderTime/超过timeout, 回收无人机，开始进入移车环节")
                     # 回收飞机预计3s，挪合适飞机预计3s
                     self.drone_retrieve(
