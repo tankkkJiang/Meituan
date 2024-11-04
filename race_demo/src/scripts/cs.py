@@ -428,12 +428,12 @@ class DemoPipeline:
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
                 if self.waybill_count_start == 1:
                     order_status = next(
-                        (order for order in self.bills_status if order.index == 1), None)
+                        (order for order in self.bills_status if order.index == waybill['index']), None)
                     # 打印订单状态检查
                     if order_status is not None:
                         print(f"初始化订单: Found order status: {order_status}")
                         better_time_ms = order_status.betterTime
-                        print(f"初始化订单：betterTime for order index 1: {better_time_ms}")
+                        print(f"初始化订单: betterTime for order index: {better_time_ms}")
                         self.running_start_time_ms = better_time_ms - waybill['betterTime']
                         print(f"设置启动时间戳 Running start time (ms): {self.running_start_time_ms}")
                     else:
