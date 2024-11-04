@@ -36,7 +36,6 @@ import pymtmap
 
 Moving_car_cycle = 35
 Preparation_Cycle = 20
-running_start_time_ms = int(rospy.get_time() * 1000)
 
 class WorkState(Enum):
     START = 1
@@ -85,7 +84,7 @@ class DemoPipeline:
             queue_size=100)
         self.map_client = rospy.ServiceProxy('query_voxel', QueryVoxel)
         # 读取配置文件和信息
-        self.running_start_time_ms = running_start_time_ms
+        self.running_start_time_ms = int(rospy.get_time() * 1000)
         print(f"开始的毫秒时间戳 - {self.running_start_time_ms}")
         with open('/config/config.json', 'r') as file:
             self.config = json.load(file)
@@ -95,7 +94,7 @@ class DemoPipeline:
         self.map_boundary = self.config['taskParam']['mapBoundaryInfo']
 
         self.waybill_infos = self.config['taskParam']['waybillParamList']
-        print(self.waybill_infos)
+        # print(self.waybill_infos)
         # 在派发前按 betterTime + timeout 排序waybills
         # self.waybill_infos.sort(key=lambda x: x['betterTime'] + x['timeout'])
         self.waybill_infos.sort(key=lambda x: x['orderTime'])
@@ -427,6 +426,9 @@ class DemoPipeline:
         print(f"已开始的订单数{self.waybill_count_start}: Begin to dispatch, 还未进入选车机")
         while not rospy.is_shutdown():
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
+                order_status = next(
+                    (order for order in self.bills_status if order.index == bill_index), None)
+                
                 select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
                 if select_start_time_ms < waybill['orderTime'] or select_start_time_ms > (waybill['timeout']-15000):
                     # 丢弃这一单，直接开始下一单
