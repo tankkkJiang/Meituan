@@ -36,6 +36,7 @@ import pymtmap
 
 Moving_car_cycle = 35
 Preparation_Cycle = 20
+running_start_time_ms = int(rospy.get_time() * 1000)
 
 class WorkState(Enum):
     START = 1
@@ -84,7 +85,7 @@ class DemoPipeline:
             queue_size=100)
         self.map_client = rospy.ServiceProxy('query_voxel', QueryVoxel)
         # 读取配置文件和信息
-        self.running_start_time_ms = int(rospy.get_time() * 1000) - 100000 + 40000
+        self.running_start_time_ms = running_start_time_ms
         print(f"开始的毫秒时间戳 - {self.running_start_time_ms}")
         with open('/config/config.json', 'r') as file:
             self.config = json.load(file)
@@ -426,7 +427,7 @@ class DemoPipeline:
         while not rospy.is_shutdown():
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
                 select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
-                if select_start_time_ms < waybill['orderTime'] or select_start_time_ms > waybill['timeout']:
+                if select_start_time_ms < waybill['orderTime'] or select_start_time_ms > (waybill['timeout']-15000):
                     # 丢弃这一单，直接开始下一单
                     print(f"当前订单{waybill['index']}不符合绑定要求，直接放弃该订单，释放下一单")
                     self.loss_waybill +=1
