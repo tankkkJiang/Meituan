@@ -415,7 +415,7 @@ class DemoPipeline:
         return groups
     
     # 调度小车和无人机完成订单
-    def dispatching(self, car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car, bind_cargo_attempts):       
+    def dispatching(self, car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car, bind_cargo_attempts, running_start_time_ms):       
         flag = True
         with self.lock:
             self.waybill_count_start += 1
@@ -521,8 +521,10 @@ class DemoPipeline:
             elif state == WorkState.MOVE_CARGO_IN_DRONE:
                 MOVE_CARGO_IN_DRONE_start = rospy.Time.now()            
                 print(f"订单{waybill['index']},car_sn:{car_sn},drone_sn:{drone_sn}:开始绑外卖")
-                cargo_bind_time_ms = int(rospy.get_time() * 1000)
+                cargo_bind_time_ms = int(rospy.get_time() * 1000) - running_start_time_ms
                 print(f"货物绑定时间戳: {cargo_bind_time_ms} 毫秒时间戳")
+                print(f"订单{waybill['index']}: 订单时间 orderTime: {waybill['orderTime']} - 毫秒戳")
+                print(f"订单{waybill['index']}: 超时时间 timeout: {waybill['timeout']} - 毫秒戳")
                 car_physical_status = next(
                         (car for car in self.car_physical_status  if self.des_pos_reached(car.pos.position, loading_pos, 0.5) and car.car_work_state == CarPhysicalStatus.CAR_READY), None)
                 drone_sn = car_physical_status.drone_sn
@@ -535,7 +537,7 @@ class DemoPipeline:
                     (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                 bind_cargo_id = drone_physical_status.bind_cargo_id
 
-                if bind_cargo_id == 0:
+                if bind_cargo_id == -1:
                     print(f"订单{waybill['index']},bind_cargoID = 0, 未到orderTime/超过timeout, 回收无人机，开始进入移车环节")
                     # 回收飞机预计3s，挪合适飞机预计3s
                     self.drone_retrieve(
@@ -680,7 +682,7 @@ class DemoPipeline:
                     # print("********************")
                     # print("以下打印外卖送达后信息")
                     print(f"外卖送达 - car_sn:{car_sn},drone_sn:{drone_sn}:外卖送{bill_state}啦！！！！！cargo-time用时:{cargo_time}")
-                    delivery_time_ms = int(rospy.get_time() * 1000)
+                    delivery_time_ms = int(rospy.get_time() * 1000) - running_start_time_ms
                     print(f"货物送达时间戳: {delivery_time_ms} 毫秒时间戳")
                     waiting_time_1 = round(4 * (Moving_car_cycle+1) - cargo_time, 1)
                     rospy.sleep(waiting_time_1)
@@ -763,6 +765,7 @@ class DemoPipeline:
     # 状态流转主函数
     def running(self):
         print("开始运行")
+        running_start_time_ms = int(rospy.get_time() * 1000)
         while self.car_physical_status is None:
             print("等待小车状态初始化...")
             rospy.sleep(1.0)  # 等待 1 秒钟再检查
@@ -862,9 +865,7 @@ class DemoPipeline:
                     print("********************")
                     print(f"看看当前事件是啥{self.events}")
                     waybill = next(it)
-                    running_start_time_ms = int(rospy.get_time() * 1000)
                     print("当前时间(秒):", rospy.get_time() - running_start_time)
-                    print(f"当前时间毫秒时间戳:{running_start_time_ms}")
                     print(f"提取订单-waybill如下:{waybill}")
                     print("********************")
                     # 初始化ros变量
@@ -874,7 +875,7 @@ class DemoPipeline:
                     bind_cargo_attempts = 0  # 用于跟踪绑定货物的尝试次数
                     thread = threading.Thread(
                         target=self.dispatching, 
-                        args=(car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car, bind_cargo_attempts)
+                        args=(car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car, bind_cargo_attempts, running_start_time_ms)
                     )
                     threads.append(thread)
                     thread.start()
