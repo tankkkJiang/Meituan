@@ -874,8 +874,8 @@ class DemoPipeline:
         # 等待所有线程完成
         for thread in threads:
             thread.join()
-        rospy.sleep(20)
-        print("用时20s初始化完成")
+        rospy.sleep(15)
+        print("用时15s初始化完成")
         # 确保在循环开始前子列表已经按照betterTime+timeout排序
         groups = self.waybill_classification()
         iterators = [iter(group) for group in groups]
@@ -909,7 +909,7 @@ class DemoPipeline:
                     )
                     threads.append(thread)
                     thread.start()
-                    rospy.sleep(Moving_car_cycle/5)     # 每多少秒周期提取并处理一单订单
+                    rospy.sleep(Moving_car_cycle)     # 每多少秒周期提取并处理一单订单
                 except StopIteration:
                     # 如果迭代器已经耗尽，从列表中移除
                     iterators.remove(it)
