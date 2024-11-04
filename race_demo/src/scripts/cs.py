@@ -887,7 +887,6 @@ class DemoPipeline:
                     try:
                         # 尝试从当前迭代器中提取一个订单
                         print("********************")
-                        print(f"看看当前事件是啥{self.events}")
                         waybill = next(it)
                         print("当前时间(秒):", rospy.get_time() - running_start_time)
                         print(f"提取订单-waybill如下:{waybill['index']}")
@@ -898,7 +897,7 @@ class DemoPipeline:
                         bind_cargo_attempts = 0  # 用于跟踪绑定货物的尝试次数
 
                         select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
-                        if self.waybill_count_start > 1 and (select_start_time_ms < (waybill['orderTime']) or select_start_time_ms > (waybill['timeout']-300000)):
+                        if self.waybill_count_start > 1 and (select_start_time_ms < (waybill['orderTime']) or select_start_time_ms > (waybill['timeout']-250000)):
                             # 丢弃这一单，直接开始下一单
                             self.loss_waybill += 1
                             print(f"当前订单{waybill['index']}不符合绑定要求，直接放弃该订单，开始提取下一单")
@@ -910,6 +909,7 @@ class DemoPipeline:
                             continue
                         else:
                             print(f"当前订单{waybill['index']}符合绑定要求，开启处理线程")
+                            print(f"看看当前事件是啥{self.events}")
                             print("********************")
                             thread = threading.Thread(
                                 target=self.dispatching, 
