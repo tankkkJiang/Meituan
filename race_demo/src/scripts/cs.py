@@ -423,15 +423,7 @@ class DemoPipeline:
         flag = True
         with self.lock:
             self.waybill_count_start += 1
-        print(f"已开始的订单数{self.waybill_count_start}: Begin to dispatch, 还未进入选车机")
-
-        if self.waybill_count_start > 1 and not is_empty_car:
-            print(f"订单{waybill['index']}正在等待前一单移车完成/放弃执行再开始订单...")
-            self.order_semaphore.acquire()  # (-1)阻塞，等待前一单完成并释放信号量
-        elif is_empty_car and self.waybill_count_start > 1:
-            is_empty_car = False  # 重置为空车状态
-            print(f"重新开始的订单{waybill['index']},上一轮空车移动，重新开始选择无人机小车")
-    
+        print(f"已开始的订单数{self.waybill_count_start}: Begin to dispatch, 还未进入选车机")    
         while not rospy.is_shutdown():
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
                 if self.waybill_count_start == 1:
@@ -440,26 +432,22 @@ class DemoPipeline:
                         (order for order in self.bills_status if order.index == waybill['index']), None)
                     # 打印订单状态检查
                     if order_status is not None:
-                        print(f"初始化订单: Found order status: {order_status}")
+                        # print(f"初始化订单: Found order status: {order_status}")
                         better_time_ms = order_status.betterTime
-                        print(f"初始化订单: betterTime for order index: {better_time_ms}")
+                        # print(f"初始化订单: betterTime for order index: {better_time_ms}")
                         self.running_start_time_ms = better_time_ms - waybill['betterTime']
                         print(f"设置启动时间戳 Running start time (ms): {self.running_start_time_ms}")
                     else:
                         print("Order with index not found.")
 
-                print(f"订单{waybill['index']}前一单移车完成/放弃执行/第一单开始")
-                select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
-                if select_start_time_ms < waybill['orderTime'] or select_start_time_ms > (waybill['timeout']):
-                    # 丢弃这一单，直接开始下一单
-                    print(f"当前订单{waybill['index']}不符合绑定要求，直接放弃该订单，释放下一单")
-                    self.loss_waybill +=1
-                    self.order_semaphore.release()         # 释放信号量，允许下一单开始
-                    break
+                if self.waybill_count_start > 1 and not is_empty_car:
+                    print(f"订单{waybill['index']}正在等待前一单移车完成/放弃执行再开始订单...")
+                    self.order_semaphore.acquire()  # (-1)阻塞，等待前一单完成并释放信号量
+                elif is_empty_car and self.waybill_count_start > 1:
+                    is_empty_car = False  # 重置为空车状态
+                    print(f"重新开始的订单{waybill['index']},上一轮空车移动，重新开始选择无人机小车，出现该情况一般是异常。")
 
-                select_car_drone_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
-                print(f"经过{(select_car_drone_start_time_ms-select_start_time_ms)/1000}秒完成选择合适订单")
-                print(f"已开始的订单数{self.waybill_count_start}, 丢弃订单{self.loss_waybill}, 当前订单{waybill['index']}的小车无人机开始进行初始化")
+                print(f"已开始的订单数{self.waybill_count_start}, 丢弃订单数{self.loss_waybill}, 当前订单{waybill['index']}的小车无人机开始进行初始化")
                 dispatching_start_time = rospy.Time.now()
                 while True:
                     car_physical_status = next(
@@ -897,20 +885,30 @@ class DemoPipeline:
                     print(f"看看当前事件是啥{self.events}")
                     waybill = next(it)
                     print("当前时间(秒):", rospy.get_time() - running_start_time)
-                    print(f"提取订单-waybill如下:{waybill}")
-                    print("********************")
+                    print(f"提取订单-waybill如下:{waybill['index']}")
                     # 初始化ros变量
                     state = WorkState.SELACT_WAYBILL_CAR_DRONE
                     # 在 running() 方法中为每个线程初始化 is_empty_car
                     is_empty_car = False     # 初始化为 False，表示默认不是空车
                     bind_cargo_attempts = 0  # 用于跟踪绑定货物的尝试次数
-                    thread = threading.Thread(
-                        target=self.dispatching, 
-                        args=(car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car, bind_cargo_attempts)
-                    )
-                    threads.append(thread)
-                    thread.start()
-                    rospy.sleep(Moving_car_cycle/5)     # 每多少秒周期提取并处理一单订单
+
+                    if self.waybill_count_start > 1:
+                        select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
+                        if select_start_time_ms < waybill['orderTime'] or select_start_time_ms > (waybill['timeout']):
+                            # 丢弃这一单，直接开始下一单
+                            self.loss_waybill += 1
+                            print(f"当前订单{waybill['index']}不符合绑定要求，直接放弃该订单，开始提取下一单")
+                            continue
+                    else:
+                        print(f"当前订单{waybill['index']}符合绑定要求，开启处理线程")
+                        thread = threading.Thread(
+                            target=self.dispatching, 
+                            args=(car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car, bind_cargo_attempts)
+                        )
+                        threads.append(thread)
+                        thread.start()
+                        rospy.sleep(Moving_car_cycle)     # 每多少秒周期提取并处理一单订单
+                    print("********************")
                 except StopIteration:
                     # 如果迭代器已经耗尽，从列表中移除
                     iterators.remove(it)
