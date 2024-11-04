@@ -894,13 +894,14 @@ class DemoPipeline:
 
                     if self.waybill_count_start > 1:
                         select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
-                        if select_start_time_ms < waybill['orderTime'] or select_start_time_ms > (waybill['timeout']):
+                        if select_start_time_ms < (waybill['orderTime'] - 15000) or select_start_time_ms > (waybill['timeout']-15000):
                             # 丢弃这一单，直接开始下一单
                             self.loss_waybill += 1
                             print(f"当前订单{waybill['index']}不符合绑定要求，直接放弃该订单，开始提取下一单")
                             continue
                     else:
                         print(f"当前订单{waybill['index']}符合绑定要求，开启处理线程")
+                        print("********************")
                         thread = threading.Thread(
                             target=self.dispatching, 
                             args=(car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car, bind_cargo_attempts)
@@ -908,7 +909,6 @@ class DemoPipeline:
                         threads.append(thread)
                         thread.start()
                         rospy.sleep(Moving_car_cycle)     # 每多少秒周期提取并处理一单订单
-                    print("********************")
                 except StopIteration:
                     # 如果迭代器已经耗尽，从列表中移除
                     iterators.remove(it)
