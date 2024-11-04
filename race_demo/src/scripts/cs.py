@@ -884,6 +884,11 @@ class DemoPipeline:
             # 每个迭代器对应一个已经排序的子列表
             for it in iterators[:]:
                 while True:  # 在每个迭代器中使用 while 循环
+                    if rospy.get_time() - running_start_time > 3600:
+                        # 打印总得分并退出循环
+                        print('超过3600秒，结束循环。')
+                        print('Total waybill finished:', self.waybill_count_finish, ', Total score:', self.score)
+                        break
                     try:
                         # 尝试从当前迭代器中提取一个订单
                         print("********************")
@@ -897,7 +902,7 @@ class DemoPipeline:
                         bind_cargo_attempts = 0  # 用于跟踪绑定货物的尝试次数
 
                         select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
-                        if self.waybill_count_start > 1 and select_start_time_ms > (waybill['betterTime'] - 100000):
+                        if self.waybill_count_start > 1 and select_start_time_ms > (select_start_time_ms < (waybill['orderTime']) or select_start_time_ms > (waybill['timeout'] - 250000)):
                             # 丢弃这一单，直接开始下一单
                             self.loss_waybill += 1
                             print(f"当前订单{waybill['index']}不符合绑定要求，直接放弃该订单，开始提取下一单")
