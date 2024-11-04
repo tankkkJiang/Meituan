@@ -423,6 +423,7 @@ class DemoPipeline:
         flag = True
         with self.lock:
             self.waybill_count_start += 1
+        waybill_start_time = rospy.Time.now()
         print(f"已开始的订单数{self.waybill_count_start}: Begin to dispatch, 还未进入选车机")    
         while not rospy.is_shutdown():
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
@@ -441,13 +442,16 @@ class DemoPipeline:
                         print("Order with index not found.")
 
                 if self.waybill_count_start > 1 and not is_empty_car:
+                    # 非空车，正常情况
                     print(f"订单{waybill['index']}正在等待前一单移车完成/放弃执行再开始订单...")
                     self.order_semaphore.acquire()  # (-1)阻塞，等待前一单完成并释放信号量
                 elif is_empty_car and self.waybill_count_start > 1:
+                    # 对空车的情况
                     is_empty_car = False  # 重置为空车状态
                     print(f"重新开始的订单{waybill['index']},上一轮空车移动，重新开始选择无人机小车，出现该情况一般是异常。")
 
-                print(f"已开始的订单数{self.waybill_count_start}, 丢弃订单数{self.loss_waybill}, 当前订单{waybill['index']}的小车无人机开始进行初始化")
+                start_to_dispatch_time = (rospy.Time.now() - waybill_start_time).to_sec()
+                print(f"已开始的订单数{self.waybill_count_start}, 丢弃订单数{self.loss_waybill}, 当前订单{waybill['index']}的小车无人机开始进行初始化，从提取订单到初始化等待了{start_to_dispatch_time}秒")
                 dispatching_start_time = rospy.Time.now()
                 while True:
                     car_physical_status = next(
