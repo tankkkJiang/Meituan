@@ -117,6 +117,7 @@ class DemoPipeline:
         self.is_landing_blocked = False  # 用于避免重复获取降落信号量的标志位
         self.lock = threading.Lock()                     # 用于保护共享资源的锁
         self.loss_waybill = 0
+        self.giveup_waybill = 0
 
     # 仿真回调函数，获取实时信息
     def panoramic_info_callback(self, panoramic_info):
@@ -422,11 +423,12 @@ class DemoPipeline:
     def dispatching(self, car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car, bind_cargo_attempts):       
         flag = True
         waybill_start_time = rospy.Time.now()
-        print(f"已开始的订单数{self.waybill_count_start}: Begin to dispatch, 还未进入选车机")    
+        print(f"订单{waybill['index']}: Begin to dispatch, 还未进入选车机")    
         while not rospy.is_shutdown():
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
                 if self.waybill_count_start == 0:
                     # 利用第一单获取准确的启动时间戳，存入共享self.running_start_time_ms中。
+                    rospy.sleep(5)
                     order_status = next(
                         (order for order in self.bills_status if order.index == waybill['index']), None)
                     # 打印订单状态检查
@@ -451,7 +453,7 @@ class DemoPipeline:
                 start_to_dispatch_time = (rospy.Time.now() - waybill_start_time).to_sec()
                 with self.lock:
                     self.waybill_count_start += 1
-                print(f"已开始初始化的订单数{self.waybill_count_start}, 丢弃订单数{self.loss_waybill}, 无法挂单订单数{self.loss_waybill}, 当前订单{waybill['index']}的小车无人机开始进行初始化，从提取订单到初始化等待了{start_to_dispatch_time}秒")
+                print(f"已开始初始化的订单数{self.waybill_count_start}, 丢弃订单数{self.giveup_waybill}, 无法挂单订单数{self.loss_waybill}, 当前订单{waybill['index']}的小车无人机开始进行初始化，从提取订单到初始化等待了{start_to_dispatch_time}秒")
                 dispatching_start_time = rospy.Time.now()
                 while True:
                     car_physical_status = next(
@@ -598,7 +600,7 @@ class DemoPipeline:
                 # 检查小车是否处于运动状态
                 while True:
                     timeout += 1
-                    if timeout > 6:
+                    if timeout > 6 and self.waybill_count_start == 1:
                         print(f"订单{waybill['index']}, 超过3s没有移动，重启循环点移动")
                         self.move_car_to_target_pos(car_list)
                         timeout = -20
@@ -643,6 +645,7 @@ class DemoPipeline:
                 if is_empty_car:
                     # 空车情况
                     bind_cargo_attempts += 1
+                    self.loss_waybill += 1
                     print(f"订单{waybill['index']},car_sn:{car_sn}空车行走移动完成，回到选择无人机的状态，不用释放order信号量")
                     self.drone_takeoff_semaphore.release() # 释放起飞信号量(+1)
                     self.drone_landing_semaphore.release() # 释放降落信号量，以便下一个无人机可以继续降落(+1)
@@ -910,7 +913,7 @@ class DemoPipeline:
                             # 需要满足条件：比ordertime大于100s，如果小于100s有可能挂不上单
                             # 分地区的分组每单的ordertime间隔比较大，可能会到150s左右，有可能这一单抛弃下一单已经无法挂货.
                             # 且150秒对于我们135s的平均送货时间来说也不会亏损太多
-                            self.loss_waybill += 1
+                            self.giveup_waybill += 1
                             print(f"当前订单{waybill['index']}不符合绑定要求，直接放弃该订单，开始提取下一单")
                             print(f"当前订单提取时间: {select_start_time_ms}")
                             print(f"订单时间 orderTime: {waybill['orderTime']} - 毫秒戳")
