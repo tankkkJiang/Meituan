@@ -117,6 +117,7 @@ class DemoPipeline:
         self.is_landing_blocked = False  # 用于避免重复获取降落信号量的标志位
         self.lock = threading.Lock()                     # 用于保护共享资源的锁
         self.loss_waybill = 0
+        self.giveup_waybill = 0
 
     # 仿真回调函数，获取实时信息
     def panoramic_info_callback(self, panoramic_info):
@@ -421,13 +422,11 @@ class DemoPipeline:
     # 调度小车和无人机完成订单
     def dispatching(self, car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car, bind_cargo_attempts):       
         flag = True
-        with self.lock:
-            self.waybill_count_start += 1
         waybill_start_time = rospy.Time.now()
-        print(f"已开始的订单数{self.waybill_count_start}: Begin to dispatch, 还未进入选车机")    
+        print(f"订单{waybill['index']}: Begin to dispatch, 还未进入选车机")    
         while not rospy.is_shutdown():
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
-                if self.waybill_count_start == 1:
+                if self.waybill_count_start == 0:
                     # 利用第一单获取准确的启动时间戳，存入共享self.running_start_time_ms中。
                     order_status = next(
                         (order for order in self.bills_status if order.index == waybill['index']), None)
@@ -441,17 +440,19 @@ class DemoPipeline:
                     else:
                         print("Order with index not found.")
 
-                if self.waybill_count_start > 1 and not is_empty_car:
+                if not is_empty_car:
                     # 非空车，正常情况
                     print(f"订单{waybill['index']}正在等待前一单移车完成/放弃执行再开始订单...")
                     self.order_semaphore.acquire()  # (-1)阻塞，等待前一单完成并释放信号量
-                elif is_empty_car and self.waybill_count_start > 1:
+                elif is_empty_car:
                     # 对空车的情况
                     is_empty_car = False  # 重置为空车状态
                     print(f"重新开始的订单{waybill['index']},上一轮空车移动，重新开始选择无人机小车，出现该情况一般是异常。")
-
+            
+                with self.lock:
+                    self.waybill_count_start += 1
                 start_to_dispatch_time = (rospy.Time.now() - waybill_start_time).to_sec()
-                print(f"已开始的订单数{self.waybill_count_start}, 丢弃订单数{self.loss_waybill}, 当前订单{waybill['index']}的小车无人机开始进行初始化，从提取订单到初始化等待了{start_to_dispatch_time}秒")
+                print(f"已开始的订单数{self.waybill_count_start}, 丢弃订单数{self.giveup_waybill}, 失败订单数{self.loss_waybill}, 当前订单{waybill['index']}的小车无人机开始进行初始化，从提取订单到初始化等待了{start_to_dispatch_time}秒")
                 dispatching_start_time = rospy.Time.now()
                 while True:
                     car_physical_status = next(
@@ -640,6 +641,7 @@ class DemoPipeline:
                 if is_empty_car:
                     # 空车情况
                     bind_cargo_attempts += 1
+                    self.loss_waybill += 1
                     print(f"订单{waybill['index']},car_sn:{car_sn}空车行走移动完成，回到选择无人机的状态，不用释放order信号量")
                     self.drone_takeoff_semaphore.release() # 释放起飞信号量(+1)
                     self.drone_landing_semaphore.release() # 释放降落信号量，以便下一个无人机可以继续降落(+1)
@@ -773,7 +775,7 @@ class DemoPipeline:
                     print(f"飞机返回着陆耗时: {back_land_time}秒")
                     print(f"飞机着陆耗时(pos2->landing_pos): {back_land_time-back_time}秒")
                     print(f"来回的差值{back_land_time-cargo_time}")
-                    print(f"编号Waybill ID: {waybill['index']}")
+                    print(f"已开始的订单数{self.waybill_count_start}, 丢弃订单数{self.giveup_waybill}, 失败订单数{self.loss_waybill}, 当前订单{waybill['index']}")
                     print(f"订单时间 orderTime: {waybill['orderTime']} - 毫秒戳")
                     print(f"最佳送达时间 betterTime: {waybill['betterTime']} - 毫秒戳")
                     print(f"超时时间 timeout: {waybill['timeout']} - 毫秒戳")
@@ -902,10 +904,10 @@ class DemoPipeline:
                         bind_cargo_attempts = 0  # 用于跟踪绑定货物的尝试次数
 
                         select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
-                        if self.waybill_count_start > 1 and (select_start_time_ms > (waybill['orderTime'] + 150000)) and ((select_start_time_ms + 15000 > (waybill['timeout'])) or (select_start_time_ms + 135000 > ((waybill['timeout'] - waybill['betterTime'])/4)+waybill['betterTime'])):
+                        if self.waybill_count_start > 1 and (select_start_time_ms > (waybill['orderTime'] + 135000)) and ((select_start_time_ms + 15000 > (waybill['timeout'])) or (select_start_time_ms + 135000 > ((waybill['timeout'] - waybill['betterTime'])/4)+waybill['betterTime'])):
                             # 丢弃这一单，直接开始下一单
-                            # 需要满足条件：比ordertime大于6s，如果小于6s有可能挂不上单
-                            self.loss_waybill += 1
+                            # 需要满足条件
+                            self.giveup_waybill += 1
                             print(f"当前订单{waybill['index']}不符合绑定要求，直接放弃该订单，开始提取下一单")
                             print(f"当前订单提取时间: {select_start_time_ms}")
                             print(f"订单时间 orderTime: {waybill['orderTime']} - 毫秒戳")
