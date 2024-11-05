@@ -111,7 +111,7 @@ class DemoPipeline:
         self.score = None
         self.events = None
         self.waybill_start_time_millis = None
-        self.order_semaphore = threading.Semaphore(0)  # 初始不可用
+        self.order_semaphore = threading.Semaphore(1)           # 初始可用
         self.drone_takeoff_semaphore = threading.Semaphore(0)  # 初始化信号量为 0，表示当前不可用
         self.drone_landing_semaphore = threading.Semaphore(1)  # 初始化为 1，表示初始时允许小车移动
         self.is_landing_blocked = False  # 用于避免重复获取降落信号量的标志位
