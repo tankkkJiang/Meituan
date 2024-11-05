@@ -555,6 +555,11 @@ class DemoPipeline:
                 # 从订单信息waybill中提取对应的外卖ID
                 cargo_id = waybill['cargoParam']['index']
 
+                move_cargo_start_time = (rospy.Time.now() - dispatching_start_time).to_sec()
+                print(f"订单{waybill['index']}, car_sn:{car_sn}: 进入挂外卖环节，可能等待挂外卖")
+                if move_cargo_start_time < Preparation_Cycle-10:
+                    rospy.sleep(Preparation_Cycle-10-move_cargo_start_time)
+
                 self.move_cargo_in_drone(cargo_id, drone_sn, 10.0)
                 drone_physical_status = next(
                     (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
@@ -597,7 +602,7 @@ class DemoPipeline:
                     timeout += 1
                     if timeout > 6:
                         print("超过3s没有移动，重启循环点移动")
-                        # self.move_car_to_target_pos(car_list)
+                        self.move_car_to_target_pos(car_list)
                         timeout = -20
                     car_physical_status = next(
                         (car for car in self.car_physical_status if car.sn == car_sn), None)
@@ -867,8 +872,8 @@ class DemoPipeline:
         # 等待所有线程完成
         for thread in threads:
             thread.join()
-        rospy.sleep(15)
-        print("用时15s初始化完成")
+        rospy.sleep(20)
+        print("用时20s初始化完成")
         # 确保在循环开始前子列表已经按照betterTime+timeout排序
         groups = self.waybill_classification()
         iterators = [iter(group) for group in groups]
