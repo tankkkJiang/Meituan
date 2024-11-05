@@ -425,7 +425,7 @@ class DemoPipeline:
         print(f"已开始的订单数{self.waybill_count_start}: Begin to dispatch, 还未进入选车机")    
         while not rospy.is_shutdown():
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
-                if self.waybill_count_start == 1:
+                if self.waybill_count_start == 0:
                     # 利用第一单获取准确的启动时间戳，存入共享self.running_start_time_ms中。
                     order_status = next(
                         (order for order in self.bills_status if order.index == waybill['index']), None)
