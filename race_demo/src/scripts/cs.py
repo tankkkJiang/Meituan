@@ -867,24 +867,24 @@ class DemoPipeline:
         # # 循环提取每个子列表的一个元素，直到所有子列表都为空
         flying_height_list = [-86, -92, -98]
         flying_height_iterator = itertools.cycle(flying_height_list)
-        while not rospy.is_shutdown() and iterators:
+
+        should_continue = True  # 标志变量，控制最外层循环
+        # while not rospy.is_shutdown() and iterators:
+        while should_continue and not rospy.is_shutdown() and iterators:
             flying_height = next(flying_height_iterator)
             # flying_height = -64
             # 使用副本循环，因为可能会移除空的子列表
             # 创建每个子订单组的进程
             threads = []
             # 每个迭代器对应一个已经排序的子列表
+
             if rospy.get_time() - running_start_time > 3600:
-                # 打印总得分并退出循环
-                print('超过3600秒，结束循环。')
-                print('Total waybill finished:', self.waybill_count_finish, ', Total score:', self.score)
+                print('超过3600秒，停止创建新线程，等待所有线程完成。')
+                should_continue = False
                 break
 
             for it in iterators[:]:
-                if rospy.get_time() - running_start_time > 3600:
-                    # 打印总得分并退出循环
-                    print('超过3600秒，结束循环。')
-                    print('Total waybill finished:', self.waybill_count_finish, ', Total score:', self.score)
+                if not should_continue:
                     break
                 while True:  # 在每个迭代器中使用 while 循环
                     if rospy.get_time() - running_start_time > 3600:
@@ -894,6 +894,7 @@ class DemoPipeline:
                             thread.join()
                         print('所有线程完成，结束程序。')
                         print('Total waybill finished:', self.waybill_count_finish, ', Total score:', self.score)
+                        should_continue = False
                         break
                     try:
                         # 尝试从当前迭代器中提取一个订单
