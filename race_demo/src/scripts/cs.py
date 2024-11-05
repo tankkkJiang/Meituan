@@ -421,13 +421,11 @@ class DemoPipeline:
     # 调度小车和无人机完成订单
     def dispatching(self, car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car, bind_cargo_attempts):       
         flag = True
-        with self.lock:
-            self.waybill_count_start += 1
         waybill_start_time = rospy.Time.now()
-        print(f"已开始的订单数{self.waybill_count_start}: Begin to dispatch, 还未进入选车机")    
+        print(f"订单{waybill['index']}: Begin to dispatch, 还未进入选车机")    
         while not rospy.is_shutdown():
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
-                if self.waybill_count_start == 1:
+                if self.waybill_count_start == 0:
                     # 利用第一单获取准确的启动时间戳，存入共享self.running_start_time_ms中。
                     order_status = next(
                         (order for order in self.bills_status if order.index == waybill['index']), None)
@@ -451,7 +449,9 @@ class DemoPipeline:
                     print(f"重新开始的订单{waybill['index']},上一轮空车移动，重新开始选择无人机小车，出现该情况一般是异常。")
 
                 start_to_dispatch_time = (rospy.Time.now() - waybill_start_time).to_sec()
-                print(f"已开始的订单数{self.waybill_count_start}, 丢弃订单数{self.loss_waybill}, 当前订单{waybill['index']}的小车无人机开始进行初始化，从提取订单到初始化等待了{start_to_dispatch_time}秒")
+                with self.lock:
+                    self.waybill_count_start += 1
+                print(f"已开始的订单数{self.waybill_count_start}, 丢弃订单数{self.loss_waybill}, 已失效的订单（无法挂餐）{self.loss_waybill}, 当前订单{waybill['index']}的小车无人机开始进行初始化，从提取订单到初始化等待了{start_to_dispatch_time}秒")
                 dispatching_start_time = rospy.Time.now()
                 while True:
                     car_physical_status = next(
@@ -568,6 +568,7 @@ class DemoPipeline:
                 if bind_cargo_id == 0:
                     # 以防万一，一般不会出现这种情况
                     print(f"订单{waybill['index']},bind_cargoID = 0, 未到orderTime/超过timeout, 回收无人机，开始进入移车环节")
+                    self.loss_waybill += 1
                     # 回收飞机预计3s，挪合适飞机预计3s
                     self.drone_retrieve(
                         drone_sn, car_sn, 3, WorkState.MOVE_DRONE_ON_CAR)
@@ -600,10 +601,14 @@ class DemoPipeline:
                 # 检查小车是否处于运动状态
                 while True:
                     timeout += 1
-                    if timeout > 6:
-                        print("超过3s没有移动，重启循环点移动")
+                    if timeout > 30:
+                        print("超过60s没有移动，重启循环点移动")
                         self.move_car_to_target_pos(car_list)
-                        timeout = -20
+                        timeout = -100
+                    if self.waybill_count_start == 1:
+                        print("第一单需要重启一次移车")
+                        rospy.sleep(2)
+                        self.move_car_to_target_pos(car_list)
                     car_physical_status = next(
                         (car for car in self.car_physical_status if car.sn == car_sn), None)
                     if car_physical_status is None:
@@ -785,6 +790,7 @@ class DemoPipeline:
                     print(f"货物绑定时间戳: {cargo_bind_time_ms} - 毫秒戳")
                     print(f"货物送达时间戳: {delivery_time_ms} - 毫秒戳")
                     print(f"已开始的总订单量{self.waybill_count_start}")
+                    print(f"已失效的订单（无法挂餐）{self.loss_waybill}")
                     print(f"已完成的总订单量{self.waybill_count_finish}，当前的分数{self.score}")
                     print("无人机降落完成，允许小车继续移动。")
                     print("********************")
