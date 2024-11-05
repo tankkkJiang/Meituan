@@ -874,15 +874,18 @@ class DemoPipeline:
             # 创建每个子订单组的进程
             threads = []
             # 每个迭代器对应一个已经排序的子列表
-
             if rospy.get_time() - running_start_time > 3600:
-                print('超过3600秒，停止创建新线程，等待所有线程完成。')
-                for thread in threads:
-                    thread.join()  # 等待所有线程结束
-                print('所有线程完成，结束程序。')
-                return  # 使用 return 退出整个函数
+                # 打印总得分并退出循环
+                print('超过3600秒，结束循环。')
+                print('Total waybill finished:', self.waybill_count_finish, ', Total score:', self.score)
+                break
 
             for it in iterators[:]:
+                if rospy.get_time() - running_start_time > 3600:
+                    # 打印总得分并退出循环
+                    print('超过3600秒，结束循环。')
+                    print('Total waybill finished:', self.waybill_count_finish, ', Total score:', self.score)
+                    break
                 while True:  # 在每个迭代器中使用 while 循环
                     if rospy.get_time() - running_start_time > 3600:
                         # 打印总得分并退出循环
@@ -904,7 +907,7 @@ class DemoPipeline:
                         is_empty_car = False     # 初始化为 False，表示默认不是空车
 
                         select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
-                        if self.waybill_count_start > 1 and (select_start_time_ms > (waybill['orderTime'] + 135000)) and ((select_start_time_ms + 15000 > (waybill['timeout'])) or (select_start_time_ms + 135000 > ((waybill['timeout'] - waybill['betterTime'])/8)+waybill['betterTime'])):
+                        if self.waybill_count_start > 1 and (select_start_time_ms > (waybill['orderTime'] + 125000)) and ((select_start_time_ms + 15000 > (waybill['timeout'])) or (select_start_time_ms + 135000 > ((waybill['timeout'] - waybill['betterTime'])/8)+waybill['betterTime']) or (select_start_time_ms + 125000 > waybill['betterTime'])):
                             # 丢弃这一单，直接开始下一单
                             # 需要满足条件
                             self.giveup_waybill += 1
