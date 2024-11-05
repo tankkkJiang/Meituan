@@ -601,7 +601,7 @@ class DemoPipeline:
                 # 检查小车是否处于运动状态
                 while True:
                     timeout += 1
-                    if timeout > 6 and self.waybill_count_start == 1:
+                    if timeout > 100 and self.waybill_count_start == 1:
                         print("第一单超过3s没有移动，重启循环点移动")
                         self.move_car_to_target_pos(car_list)
                         timeout = -20
