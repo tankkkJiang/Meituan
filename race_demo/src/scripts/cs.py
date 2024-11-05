@@ -601,8 +601,8 @@ class DemoPipeline:
                 # 检查小车是否处于运动状态
                 while True:
                     timeout += 1
-                    if timeout > 100 and self.waybill_count_start == 1:
-                        print("第一单超过50s没有移动，重启循环点移动")
+                    if timeout > 6 and self.waybill_count_start == 1:
+                        print("第一单超过3s没有移动，重启循环点移动")
                         self.move_car_to_target_pos(car_list)
                         timeout = -20
                     car_physical_status = next(
@@ -613,23 +613,23 @@ class DemoPipeline:
                         continue
                     
                     if car_physical_status.car_work_state == CarPhysicalStatus.CAR_RUNNING:
-                        print(f"car_sn:{car_sn}小车已经进入running状态。")
+                        print(f"car_sn:{car_sn}小车已经进入running状态，但不一定离开装载点。")
                         car_physical_status = next(
                             (car for car in self.car_physical_status if car.sn == car_sn), None)
                         car_pos = car_physical_status.pos.position
                         if not self.des_pos_reached(loading_pos, car_pos, 1):
-                            print(f"car_sn:{car_sn}小车小车位置已经不在装载点，正在移动...")
+                            # print(f"car_sn:{car_sn}小车小车位置已经不在装载点，正在移动...")
                             break  # 小车已经开始运动，跳出循环
                         else:
-                            print("虽然running状态但还未移动")
-                            rospy.sleep(3)
+                            # print("虽然running状态但还未移动")
+                            rospy.sleep(1)
                     else:
-                        print("小车未在运动状态，等待小车开始移动...")
+                        # print("小车未在运动状态，等待小车开始移动...")
                         rospy.sleep(0.5)  # 等待一秒再检查小车状态
 
                 while not car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
                     # print(f"car_sn:{car_sn}小车正在移动中...小车状态为:{car_physical_status.car_work_state}")
-                    rospy.sleep(1)  # 每隔时间检查一次位置不符合，有可能
+                    rospy.sleep(0.1)  # 每隔时间检查一次位置不符合，有可能
                     car_physical_status = next(
                         (car for car in self.car_physical_status if car.sn == car_sn), None)
                     drone_physical_status = next(
