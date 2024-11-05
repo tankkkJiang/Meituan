@@ -888,6 +888,7 @@ class DemoPipeline:
                         # 打印总得分并退出循环
                         print('超过3600秒，结束循环。')
                         print('Total waybill finished:', self.waybill_count_finish, ', Total score:', self.score)
+                        rospy.loginfo("Elapsed time exceeds 1 hour.")
                         break
                     try:
                         # 尝试从当前迭代器中提取一个订单
@@ -902,9 +903,11 @@ class DemoPipeline:
                         bind_cargo_attempts = 0  # 用于跟踪绑定货物的尝试次数
 
                         select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
-                        if self.waybill_count_start > 1 and (select_start_time_ms > (waybill['orderTime'] + 80000)) and ((select_start_time_ms + 15000 > (waybill['timeout'])) or (select_start_time_ms + 135000 > ((waybill['timeout'] - waybill['betterTime'])/4)+waybill['betterTime'])):
+                        if self.waybill_count_start > 1 and (select_start_time_ms > (waybill['orderTime'] + 100000)) and ((select_start_time_ms + 15000 > (waybill['timeout'])) or (select_start_time_ms + 135000 > ((waybill['timeout'] - waybill['betterTime'])/4)+waybill['betterTime'])):
                             # 丢弃这一单，直接开始下一单
-                            # 需要满足条件：比ordertime大于80s，如果小于80s有可能挂不上单
+                            # 需要满足条件：比ordertime大于100s，如果小于100s有可能挂不上单
+                            # 分地区的分组每单的ordertime间隔比较大，可能会到100s左右，有可能这一单抛弃下一单已经无法挂货
+                            # 且100秒对于我们135s的平均送货时间来说也不会亏损太多
                             self.loss_waybill += 1
                             print(f"当前订单{waybill['index']}不符合绑定要求，直接放弃该订单，开始提取下一单")
                             print(f"当前订单提取时间: {select_start_time_ms}")
