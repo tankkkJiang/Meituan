@@ -902,7 +902,7 @@ class DemoPipeline:
                         bind_cargo_attempts = 0  # 用于跟踪绑定货物的尝试次数
 
                         select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
-                        if self.waybill_count_start > 1 and (select_start_time_ms > (waybill['orderTime'] + 20000)) and ((select_start_time_ms + 15000 > (waybill['timeout'])) or (select_start_time_ms + 135000 > ((waybill['betterTime'] + waybill['timeout'])*3)/4)):
+                        if self.waybill_count_start > 1 and (select_start_time_ms > (waybill['orderTime'] + 20000)) and ((select_start_time_ms + 15000 > (waybill['timeout'])) or (select_start_time_ms + 135000 > ((waybill['betterTime'] + waybill['timeout']))/4)):
                             # 丢弃这一单，直接开始下一单
                             # 需要满足条件：比ordertime大于6s，如果小于6s有可能挂不上单
                             self.loss_waybill += 1
