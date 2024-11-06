@@ -186,7 +186,7 @@ class DemoPipeline:
 
             # 如果小车在2秒内没有离开出发点，则重新发送移动命令
             elapsed_time = (rospy.Time.now() - start_time).to_sec()
-            if elapsed_time > 2:
+            if elapsed_time > 2 and self.des_pos_reached(car_pos, start, 0.5):
                 print(f"{car_sn}未在2秒内离开出发点，重新发送移动命令")
                 self.cmd_pub.publish(msg)
                 start_time = rospy.Time.now()  # 重置开始时间
