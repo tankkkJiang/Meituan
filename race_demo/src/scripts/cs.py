@@ -66,7 +66,7 @@ class Car:
         """设置移动目标"""
         self.target_index = (self.target_index + 1) % len(self.points)  # 逆时针选择下一个点
         self.target_pos = self.points[self.target_index]
-        print(f"车辆 {self.car_sn} 已更新，目标索引: {self.target_index}，目标位置: {self.target_pos}")
+        # print(f"车辆 {self.car_sn} 已更新，目标索引: {self.target_index}，目标位置: {self.target_pos}")
 
 
 
@@ -618,7 +618,7 @@ class DemoPipeline:
                             print(f"car_sn:{car_sn}小车小车位置已经不在装载点，正在移动...")
                             break  # 小车已经开始运动，跳出循环
                         else:
-                            # print("虽然running状态但还未移动")
+                            print("虽然running状态但还未移动")
                             rospy.sleep(3)
                     else:
                         print("小车未在运动状态，等待小车开始移动...")
