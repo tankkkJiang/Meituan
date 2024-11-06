@@ -112,7 +112,7 @@ class DemoPipeline:
         self.score = None
         self.events = None
         self.waybill_start_time_millis = None
-        self.order_semaphore = threading.Semaphore(0)  # 初始不可用
+        self.order_semaphore = threading.Semaphore(1)  # 初始不可用
         self.drone_takeoff_semaphore = threading.Semaphore(0)  # 初始化信号量为 0，表示当前不可用
         self.drone_landing_semaphore = threading.Semaphore(1)  # 初始化为 1，表示初始时允许小车移动
         self.is_landing_blocked = False  # 用于避免重复获取降落信号量的标志位
@@ -442,14 +442,8 @@ class DemoPipeline:
                     else:
                         print("Order with index not found.")
 
-                if not is_empty_car:
-                    # 非空车，正常情况
-                    print(f"订单{waybill['index']}正在等待前一单移车完成/放弃执行再开始订单...")
-                    self.order_semaphore.acquire()  # (-1)阻塞，等待前一单完成并释放信号量
-                elif is_empty_car:
-                    # 对空车的情况
-                    is_empty_car = False  # 重置为空车状态
-                    print(f"重新开始的订单{waybill['index']},上一轮空车移动，重新开始选择无人机小车，出现该情况一般是异常。")
+                print(f"订单{waybill['index']}正在等待前一单移车完成/放弃执行再开始订单...")
+                self.order_semaphore.acquire()  # (-1)阻塞，等待前一单完成并释放信号量
 
                 with self.lock:
                     self.waybill_count_start += 1
@@ -646,17 +640,14 @@ class DemoPipeline:
 
                 if is_empty_car:
                     # 空车情况
-                    bind_cargo_attempts += 1
                     self.loss_waybill += 1
                     is_empty_car = False
-                    print(f"订单{waybill['index']},car_sn:{car_sn}空车行走移动完成，回到选择无人机的状态，不用释放order信号量")
+                    print(f"订单{waybill['index']},car_sn:{car_sn}空车行走移动完成，回到选择无人机的状态，开启下一单")
                     self.drone_takeoff_semaphore.release() # 释放起飞信号量(+1)
                     self.drone_landing_semaphore.release() # 释放降落信号量，以便下一个无人机可以继续降落(+1)
-                    if bind_cargo_attempts == 1:
-                        # 未到/超时情况，放弃处理，否则连锁反应
-                        self.order_semaphore.release()  # 释放信号量，允许下一单开始
-                        break
-                    state = WorkState.SELACT_WAYBILL_CAR_DRONE
+                    # 未到/超时情况，放弃处理，否则连锁反应
+                    self.order_semaphore.release()  # 释放信号量，允许下一单开始
+                    break
                 else:
                     self.order_semaphore.release()         # 释放信号量，允许下一单开始，可以实现几秒处理一单
                     self.drone_landing_semaphore.release() # 释放降落信号量，以便下一个小车可以继续降落(+1)
