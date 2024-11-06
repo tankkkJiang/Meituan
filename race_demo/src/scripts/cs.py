@@ -67,7 +67,7 @@ class Car:
         """设置移动目标"""
         self.target_index = (self.target_index + 1) % len(self.points)  # 逆时针选择下一个点
         self.target_pos = self.points[self.target_index]
-        print(f"车辆 {self.car_sn} 已更新，目标索引: {self.target_index}，目标位置: {self.target_pos}")
+        # print(f"车辆 {self.car_sn} 已更新，目标索引: {self.target_index}，目标位置: {self.target_pos}")
 
 
 
@@ -173,7 +173,7 @@ class DemoPipeline:
             # 获取当前小车状态
             car_physical_status = next((cps for cps in self.car_physical_status if cps.sn == car_sn), None)
             if car_physical_status is None:
-                print(f"未找到车辆 {car_sn} 的物理状态信息，等待重试...")
+                # print(f"未找到车辆 {car_sn} 的物理状态信息，等待重试...")
                 rospy.sleep(1)
                 continue
 
@@ -181,13 +181,13 @@ class DemoPipeline:
 
             # 检查小车是否已经到达目的地
             if self.des_pos_reached(car_pos, end, 1):
-                print(f"{car_sn}到达目的地，结束调用")
+                # print(f"{car_sn}到达目的地，结束调用")
                 break
 
             # 如果小车在2秒内没有离开出发点，则重新发送移动命令
             elapsed_time = (rospy.Time.now() - start_time).to_sec()
             if elapsed_time > 2 and self.des_pos_reached(car_pos, start, 0.5):
-                print(f"{car_sn}未在2秒内离开出发点，重新发送移动命令")
+                # print(f"{car_sn}未在2秒内离开出发点，重新发送移动命令")
                 self.cmd_pub.publish(msg)
                 start_time = rospy.Time.now()  # 重置开始时间
 
@@ -362,14 +362,14 @@ class DemoPipeline:
 
     # 移动单辆小车
     def move_car(self, car):
-        print(f"car{car.car_sn}移动单辆小车")
+        # print(f"car{car.car_sn}移动单辆小车")
         car.set_target()
         car_physical_status = next(
             (cps for cps in self.car_physical_status if cps.sn == car.car_sn), None)
         # 检查小车状态是否有效
         if car_physical_status:
             car_pos = car_physical_status.pos.position
-            print(f"car{car.car_sn}, 现在的位置: {car_pos}, 移动目标位置: {car.target_pos}")
+            # print(f"car{car.car_sn}, 现在的位置: {car_pos}, 移动目标位置: {car.target_pos}")
             self.move_car_with_start_and_end(car.car_sn, car_pos, car.target_pos, move_car_time, WorkState.SELACT_WAYBILL_CAR_DRONE)
         else:
             print(f"car{car.car_sn}未找到物理状态信息")
@@ -384,7 +384,7 @@ class DemoPipeline:
         # 创建所有线程
         for car in car_list:
             if car.car_sn not in processed_cars:  # 检查小车是否已经创建线程
-                print(f"car{car.car_sn}开始创建线程")
+                # print(f"car{car.car_sn}开始创建线程")
                 processed_cars.add(car.car_sn)  # 将小车加入已处理集合
                 thread = threading.Thread(
                     target=self.move_car, args=(car,)
@@ -941,7 +941,7 @@ class DemoPipeline:
                         bind_cargo_attempts = 0  # 用于跟踪绑定货物的尝试次数
 
                         select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
-                        if self.waybill_count_start > 1 and (select_start_time_ms > (waybill['orderTime'] + 100000)) and ((select_start_time_ms + 15000 > (waybill['timeout'])) or (select_start_time_ms + 135000 or (select_start_time_ms + 135000 > waybill['betterTime']))):
+                        if self.waybill_count_start > 1 and (select_start_time_ms > (waybill['orderTime'] + 100000)) and ((select_start_time_ms + 15000 > (waybill['timeout'])) or (select_start_time_ms + 135000 > waybill['betterTime'])):
                             # 丢弃这一单，直接开始下一单
                             # 需要满足条件：比ordertime大于6s，如果小于6s有可能挂不上单
                             # 不同组的单间隔orderTime为100秒左右
