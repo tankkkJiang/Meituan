@@ -630,36 +630,36 @@ class DemoPipeline:
                 MOVE_CAR_TO_LEAVING_POINT_start = rospy.Time.now()
                 # 小车搭载挂外卖的无人机到达起飞点
                 self.move_car_to_target_pos(car_list)
-                timeout = 0
-
-                # 检查小车是否处于运动状态
-                while True:
-                    timeout += 1
-                    if timeout > 100:
-                        print("超过50s没有移动，重启循环点移动")
-                        self.move_car_to_target_pos(car_list)
-                        timeout = -200
-                    car_physical_status = next(
-                        (car for car in self.car_physical_status if car.sn == car_sn), None)
-                    if car_physical_status is None:
-                        print("未找到对应的小车状态信息")
-                        rospy.sleep(0.5)  # 短暂等待后再次检查
-                        continue
+                
+                # timeout = 0
+                # # 检查小车是否处于运动状态
+                # while True:
+                #     timeout += 1
+                #     if timeout > 100:
+                #         print("超过50s没有移动，重启循环点移动")
+                #         self.move_car_to_target_pos(car_list)
+                #         timeout = -200
+                #     car_physical_status = next(
+                #         (car for car in self.car_physical_status if car.sn == car_sn), None)
+                #     if car_physical_status is None:
+                #         print("未找到对应的小车状态信息")
+                #         rospy.sleep(0.5)  # 短暂等待后再次检查
+                #         continue
                     
-                    if car_physical_status.car_work_state == CarPhysicalStatus.CAR_RUNNING:
-                        print(f"car_sn:{car_sn}小车已经进入running状态, 但不一定离开装载点，需继续检查。")
-                        car_physical_status = next(
-                            (car for car in self.car_physical_status if car.sn == car_sn), None)
-                        car_pos = car_physical_status.pos.position
-                        if not self.des_pos_reached(loading_pos, car_pos, 0.5):
-                            print(f"car_sn:{car_sn}小车小车位置已经不在装载点，正在移动...")
-                            break  # 小车已经开始运动，跳出循环
-                        else:
-                            # print("虽然running状态但还未移动")
-                            rospy.sleep(3)
-                    else:
-                        # print("小车未在运动状态，等待小车开始移动...")
-                        rospy.sleep(0.5)  # 等待一秒再检查小车状态
+                #     if car_physical_status.car_work_state == CarPhysicalStatus.CAR_RUNNING:
+                #         print(f"car_sn:{car_sn}小车已经进入running状态, 但不一定离开装载点，需继续检查。")
+                #         car_physical_status = next(
+                #             (car for car in self.car_physical_status if car.sn == car_sn), None)
+                #         car_pos = car_physical_status.pos.position
+                #         if not self.des_pos_reached(loading_pos, car_pos, 0.5):
+                #             print(f"car_sn:{car_sn}小车小车位置已经不在装载点，正在移动...")
+                #             break  # 小车已经开始运动，跳出循环
+                #         else:
+                #             # print("虽然running状态但还未移动")
+                #             rospy.sleep(3)
+                #     else:
+                #         # print("小车未在运动状态，等待小车开始移动...")
+                #         rospy.sleep(0.5)  # 等待一秒再检查小车状态
 
                 while not car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
                     # print(f"car_sn:{car_sn}小车正在移动中...小车状态为:{car_physical_status.car_work_state}")
