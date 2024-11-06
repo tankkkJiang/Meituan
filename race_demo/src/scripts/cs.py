@@ -596,7 +596,7 @@ class DemoPipeline:
                     timeout += 1
                     if timeout > 6:
                         print("超过3s没有移动，重启循环点移动")
-                        # self.move_car_to_target_pos(car_list)
+                        self.move_car_to_target_pos(car_list)
                         timeout = -20
                     car_physical_status = next(
                         (car for car in self.car_physical_status if car.sn == car_sn), None)
