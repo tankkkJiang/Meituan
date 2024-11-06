@@ -454,6 +454,9 @@ class DemoPipeline:
                 start_to_dispatch_time = (rospy.Time.now() - waybill_start_time).to_sec()
                 print(f"已开始的订单数{self.waybill_count_start}, 丢弃订单数{self.loss_waybill}, 当前订单{waybill['index']}的小车无人机开始进行初始化，从提取订单到初始化等待了{start_to_dispatch_time}秒")
                 dispatching_start_time = rospy.Time.now()
+                if self.waybill_count_start == 1:
+                    print("第一单需要休眠20s直到到达装载点")
+                    rospy.sleep(20)
                 while True:
                     car_physical_status = next(
                         (car for car in self.car_physical_status if self.des_pos_reached(car.pos.position, loading_pos, 1) and car.car_work_state == CarPhysicalStatus.CAR_READY), None)
