@@ -144,7 +144,7 @@ class DemoPipeline:
 
     # 移动地面车辆的函数
     def move_car_with_start_and_end(self, car_sn, start, end, time_est, next_state):
-        # print("开始移动")
+        print("与环境信息交流，开始移动")
         msg = UserCmdRequest()
         msg.peer_id = self.peer_id
         msg.task_guid = self.task_guid
@@ -330,6 +330,7 @@ class DemoPipeline:
 
     # 移动单辆小车
     def move_car(self, car):
+        print("移动单辆小车")
         car_physical_status = next(
             (cps for cps in self.car_physical_status if cps.sn == car.car_sn), None)
         car_pos = car_physical_status.pos.position
@@ -595,8 +596,8 @@ class DemoPipeline:
                 # 检查小车是否处于运动状态
                 while True:
                     timeout += 1
-                    if timeout > 6:
-                        print("超过3s没有移动，重启循环点移动")
+                    if timeout > 30:
+                        print("超过15s没有移动，重启循环点移动")
                         self.move_car_to_target_pos(car_list)
                         timeout = -20
                     car_physical_status = next(
