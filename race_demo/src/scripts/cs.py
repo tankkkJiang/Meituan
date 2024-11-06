@@ -145,7 +145,7 @@ class DemoPipeline:
 
     # 移动地面车辆的函数
     def move_car_with_start_and_end(self, car_sn, start, end, time_est, next_state):
-        # print("开始移动")
+        print("调用移动小车函数，发送信息")
         msg = UserCmdRequest()
         msg.peer_id = self.peer_id
         msg.task_guid = self.task_guid
@@ -331,6 +331,7 @@ class DemoPipeline:
 
     # 移动单辆小车
     def move_car(self, car):
+        print("调用move_car函数，移动单辆小车")
         car_physical_status = next(
             (cps for cps in self.car_physical_status if cps.sn == car.car_sn), None)
         car_pos = car_physical_status.pos.position
@@ -342,7 +343,7 @@ class DemoPipeline:
     
     # 小车按照循环点移动
     def move_car_to_target_pos(self, car_list):
-        print("正在调用循环小车移动")
+        print("正在调用循环小车移动，创建多个线程")
         threads = []
         # 创建所有线程
         for car in car_list:
@@ -592,7 +593,7 @@ class DemoPipeline:
                     timeout += 1
                     if timeout > 6:
                         print("超过3s没有移动，重启循环点移动")
-                        self.move_car_to_target_pos(car_list)
+                        # self.move_car_to_target_pos(car_list)
                         timeout = -20
                     car_physical_status = next(
                         (car for car in self.car_physical_status if car.sn == car_sn), None)
