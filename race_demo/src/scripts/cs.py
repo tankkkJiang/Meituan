@@ -66,7 +66,7 @@ class Car:
         """设置移动目标"""
         self.target_index = (self.target_index + 1) % len(self.points)  # 逆时针选择下一个点
         self.target_pos = self.points[self.target_index]
-        # print(f"车辆 {self.car_sn} 已更新，目标索引: {self.target_index}，目标位置: {self.target_pos}")
+        print(f"车辆 {self.car_sn} 已更新，目标索引: {self.target_index}，目标位置: {self.target_pos}")
 
 
 
@@ -332,7 +332,7 @@ class DemoPipeline:
 
     # 移动单辆小车
     def move_car(self, car):
-        print("移动单辆小车")
+        print(f"car{car.car_sn}移动单辆小车")
         car.set_target()
         car_physical_status = next(
             (cps for cps in self.car_physical_status if cps.sn == car.car_sn), None)
@@ -351,8 +351,15 @@ class DemoPipeline:
         processed_cars = set()  # 使用集合跟踪已经创建线程的小车
         # 创建所有线程
         for car in car_list:
-            if car.car_sn not in processed_cars:  # 检查小车是否已经创建线程
-                print(f"car{car.car_sn}开始创建线程")
+            # if car.car_sn not in processed_cars:  # 检查小车是否已经创建线程
+            #     print(f"car{car.car_sn}开始创建线程")
+            #     processed_cars.add(car.car_sn)  # 将小车加入已处理集合
+            #     thread = threading.Thread(
+            #         target=self.move_car, args=(car,)
+            #     )
+            #     threads.append(thread)
+            if car.car_sn == 'SIM-MAGV-0001':
+                print(f"car{car.car_sn}开始创建线程,car")
                 processed_cars.add(car.car_sn)  # 将小车加入已处理集合
                 thread = threading.Thread(
                     target=self.move_car, args=(car,)
