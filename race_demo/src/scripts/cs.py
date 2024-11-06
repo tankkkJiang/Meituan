@@ -157,11 +157,27 @@ class DemoPipeline:
         msg.car_route_info.way_point.append(end)
         msg.car_route_info.yaw = 0.0
         self.cmd_pub.publish(msg)
-        rospy.sleep(time_est)
-        car_physical_status = next(
-            (cps for cps in self.car_physical_status if cps.sn == car_sn), None)
-        car_pos = car_physical_status.pos.position
-        print(f"与环境交流后移车是否成功，初始{start}，目的地{end}，当前位置{car_pos}")
+        # rospy.sleep(time_est)
+        time = 0
+        while True:            
+            car_physical_status = next(
+                (cps for cps in self.car_physical_status if cps.sn == car_sn), None)
+            car_pos = car_physical_status.pos.position
+            if self.des_pos_reached(car_pos, end, 1):
+                print(f"{car_sn}到达目的地，结束调用")
+                break
+            rospy.sleep(1)
+            time += 1
+            if time > 2:
+                msg = UserCmdRequest()
+                msg.peer_id = self.peer_id
+                msg.task_guid = self.task_guid
+                msg.type = UserCmdRequest.USER_CMD_CAR_EXEC_ROUTE
+                msg.car_route_info.carSn = car_sn
+                msg.car_route_info.way_point.append(start)
+                msg.car_route_info.way_point.append(end)
+                msg.car_route_info.yaw = 0.0
+                self.cmd_pub.publish(msg)
         
     # 检测位置到达的函数
     def des_pos_reached(self, des_pos, cur_pos, threshold):
