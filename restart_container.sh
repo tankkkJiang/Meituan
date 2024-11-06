@@ -21,3 +21,6 @@ cp /home/sdk_for_user/map_client_sdk/for_py/* /root/catkin_ws/src/race_demo/src/
 cp /home/sdk_for_user/msg/* /root/catkin_ws/src/race_demo/msg/
 cp /home/sdk_for_user/map_client_sdk/for_py/voxel_map_final.bin /root/catkin_ws/
 ./home/run.sh
+
+docker exec -it race_scene_sdk_container /bin/bash
+docker cp race_scene_sdk_container:/evaluator/config/race.log .
