@@ -34,10 +34,8 @@ import pymtmap
 
 # demo定义的状态流转
 
-Moving_car_cycle = 40
-Preparation_Cycle = 23
-# 小圈小车移动15s，大圈小车移动17s
-
+Moving_car_cycle = 35
+Preparation_Cycle = 20
 
 class WorkState(Enum):
     START = 1
@@ -86,8 +84,8 @@ class DemoPipeline:
             queue_size=100)
         self.map_client = rospy.ServiceProxy('query_voxel', QueryVoxel)
         # 读取配置文件和信息
-        self.running_start_time = 0
         self.running_start_time_ms = 0
+        print(f"开始的毫秒时间戳 - {self.running_start_time_ms}")
         with open('/config/config.json', 'r') as file:
             self.config = json.load(file)
         self.drone_infos = self.config['taskParam']['droneParamList']
@@ -113,13 +111,12 @@ class DemoPipeline:
         self.score = None
         self.events = None
         self.waybill_start_time_millis = None
-        self.order_semaphore = threading.Semaphore(1)           # 初始可用
+        self.order_semaphore = threading.Semaphore(0)  # 初始不可用
         self.drone_takeoff_semaphore = threading.Semaphore(0)  # 初始化信号量为 0，表示当前不可用
         self.drone_landing_semaphore = threading.Semaphore(1)  # 初始化为 1，表示初始时允许小车移动
         self.is_landing_blocked = False  # 用于避免重复获取降落信号量的标志位
         self.lock = threading.Lock()                     # 用于保护共享资源的锁
         self.loss_waybill = 0
-        self.giveup_waybill = 0
 
     # 仿真回调函数，获取实时信息
     def panoramic_info_callback(self, panoramic_info):
@@ -147,7 +144,7 @@ class DemoPipeline:
 
     # 移动地面车辆的函数
     def move_car_with_start_and_end(self, car_sn, start, end, time_est, next_state):
-        # print("调用移动小车函数，发送信息")
+        # print("开始移动")
         msg = UserCmdRequest()
         msg.peer_id = self.peer_id
         msg.task_guid = self.task_guid
@@ -333,7 +330,6 @@ class DemoPipeline:
 
     # 移动单辆小车
     def move_car(self, car):
-        # print("调用move_car函数，移动单辆小车")
         car_physical_status = next(
             (cps for cps in self.car_physical_status if cps.sn == car.car_sn), None)
         car_pos = car_physical_status.pos.position
@@ -345,7 +341,7 @@ class DemoPipeline:
     
     # 小车按照循环点移动
     def move_car_to_target_pos(self, car_list):
-        print("正在创建多个小车移动线程")
+        print("正在调用循环小车移动")
         threads = []
         # 创建所有线程
         for car in car_list:
@@ -423,16 +419,19 @@ class DemoPipeline:
         return groups
     
     # 调度小车和无人机完成订单
-    def dispatching(self, car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car):       
+    def dispatching(self, car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car, bind_cargo_attempts):       
         flag = True
+        with self.lock:
+            self.waybill_count_start += 1
         waybill_start_time = rospy.Time.now()
-        print(f"订单{waybill['index']}: Begin to dispatch, 还未进入选车机")    
+        print(f"已开始的订单数{self.waybill_count_start}: Begin to dispatch, 还未进入选车机")    
         while not rospy.is_shutdown():
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
-                # 利用第一单获取准确的启动时间戳，存入共享self.running_start_time_ms中。
-                if self.waybill_count_start == 0:
+                if self.waybill_count_start == 1:
+                    # 利用第一单获取准确的启动时间戳，存入共享self.running_start_time_ms中。
                     order_status = next(
                         (order for order in self.bills_status if order.index == waybill['index']), None)
+                    # 打印订单状态检查
                     if order_status is not None:
                         # print(f"初始化订单: Found order status: {order_status}")
                         better_time_ms = order_status.betterTime
@@ -442,14 +441,17 @@ class DemoPipeline:
                     else:
                         print("Order with index not found.")
 
-                print(f"订单{waybill['index']}正在等待前一单移车完成/放弃执行再开始订单...")
-                self.order_semaphore.acquire()  # (-1)阻塞，等待前一单完成并释放信号量
-
-                with self.lock:
-                    self.waybill_count_start += 1
+                if self.waybill_count_start > 1 and not is_empty_car:
+                    # 非空车，正常情况
+                    print(f"订单{waybill['index']}正在等待前一单移车完成/放弃执行再开始订单...")
+                    self.order_semaphore.acquire()  # (-1)阻塞，等待前一单完成并释放信号量
+                elif is_empty_car and self.waybill_count_start > 1:
+                    # 对空车的情况
+                    is_empty_car = False  # 重置为空车状态
+                    print(f"重新开始的订单{waybill['index']},上一轮空车移动，重新开始选择无人机小车，出现该情况一般是异常。")
 
                 start_to_dispatch_time = (rospy.Time.now() - waybill_start_time).to_sec()
-                print(f"已开始的订单数{self.waybill_count_start}, 丢弃订单数{self.giveup_waybill}, 失败订单数{self.loss_waybill}, 当前订单{waybill['index']}的小车无人机开始进行初始化，从提取订单到初始化等待了{start_to_dispatch_time}秒")
+                print(f"已开始的订单数{self.waybill_count_start}, 丢弃订单数{self.loss_waybill}, 当前订单{waybill['index']}的小车无人机开始进行初始化，从提取订单到初始化等待了{start_to_dispatch_time}秒")
                 dispatching_start_time = rospy.Time.now()
                 while True:
                     car_physical_status = next(
@@ -637,12 +639,15 @@ class DemoPipeline:
 
                 if is_empty_car:
                     # 空车情况
-                    self.loss_waybill += 1
+                    bind_cargo_attempts += 1
                     print(f"订单{waybill['index']},car_sn:{car_sn}空车行走移动完成，回到选择无人机的状态，不用释放order信号量")
                     self.drone_takeoff_semaphore.release() # 释放起飞信号量(+1)
                     self.drone_landing_semaphore.release() # 释放降落信号量，以便下一个无人机可以继续降落(+1)
-                    self.order_semaphore.release()  # 释放信号量，允许下一单开始
-                    break
+                    if bind_cargo_attempts == 1:
+                        # 未到/超时情况，放弃处理，否则连锁反应
+                        self.order_semaphore.release()  # 释放信号量，允许下一单开始
+                        break
+                    state = WorkState.SELACT_WAYBILL_CAR_DRONE
                 else:
                     self.order_semaphore.release()         # 释放信号量，允许下一单开始，可以实现几秒处理一单
                     self.drone_landing_semaphore.release() # 释放降落信号量，以便下一个小车可以继续降落(+1)
@@ -696,7 +701,7 @@ class DemoPipeline:
                     speed = total_distance/cargo_time
                     self.release_cargo(
                         drone_sn, 5.0, WorkState.RELEASE_DRONE_RETURN)
-                    self.waybill_count_finish += 1
+
                     bill_state = "成功"
                     # print("********************")
                     # print("以下打印外卖送达后信息")
@@ -752,6 +757,8 @@ class DemoPipeline:
                     print(f"car_sn:{car_sn},drone_sn:{drone_sn}:已成功降落，释放降落信号量，允许小车移动")
                     self.drone_landing_semaphore.release()  # 释放信号量，允许小车移动(+1)
                     self.is_landing_blocked = False  # 重置标志位
+
+                    self.waybill_count_finish += 1
                     back_land_time = (rospy.Time.now() - back_start_time).to_sec()
                     print("********************")
                     print("以下打印无人机降落后信息")
@@ -766,7 +773,7 @@ class DemoPipeline:
                     print(f"飞机返回着陆耗时: {back_land_time}秒")
                     print(f"飞机着陆耗时(pos2->landing_pos): {back_land_time-back_time}秒")
                     print(f"来回的差值{back_land_time-cargo_time}")
-                    print(f"已开始的订单数{self.waybill_count_start}, 丢弃订单数{self.giveup_waybill}, 失败订单数{self.loss_waybill}, 当前订单{waybill['index']}")
+                    print(f"编号Waybill ID: {waybill['index']}")
                     print(f"订单时间 orderTime: {waybill['orderTime']} - 毫秒戳")
                     print(f"最佳送达时间 betterTime: {waybill['betterTime']} - 毫秒戳")
                     print(f"超时时间 timeout: {waybill['timeout']} - 毫秒戳")
@@ -774,7 +781,6 @@ class DemoPipeline:
                     print(f"货物送达时间戳: {delivery_time_ms} - 毫秒戳")
                     print(f"已开始的总订单量{self.waybill_count_start}")
                     print(f"已完成的总订单量{self.waybill_count_finish}，当前的分数{self.score}")
-                    print("当前时间(秒):", rospy.get_time() - self.running_start_time)
                     print("无人机降落完成，允许小车继续移动。")
                     print("********************")
                     # print(f"看看当前事件是啥{self.events}")
@@ -787,7 +793,6 @@ class DemoPipeline:
             print("等待小车状态初始化...")
             rospy.sleep(1.0)  # 等待 1 秒钟再检查
         running_start_time = rospy.get_time()  # 使用 rospy 获取当前时间
-        self.running_start_time = running_start_time
         print(f"running start_time:{running_start_time}")
         # 循环运行，直到达到 3600 秒
         while not rospy.is_shutdown():
@@ -823,26 +828,17 @@ class DemoPipeline:
             self.loading_cargo_point['y'],
             self.loading_cargo_point['z']
         )
-        # 小/大起飞点
-        # takeoff_pos = Position(183,431,-16)
-        takeoff_pos = Position(182,431,-16)
-        # 小/大降落点
-        # landing_pos = Position(183,438,-16)
-        landing_pos = Position(182,439,-16)
-        # 定义小/大循环路径点
-        # points = [
-        #     Position(183,431,-16),
-        #     Position(183,438,-16),
-        #     Position(190,438,-16),
-        #     Position(197,438,-16),
-        #     Position(197,431,-16),
-        #     loading_pos]
+        # 起飞点
+        takeoff_pos = Position(183,431,-16)
+        # 降落点
+        landing_pos = Position(183,438,-16)
+        # 定义循环路径点
         points = [
-            Position(182,431,-16),
-            Position(182,439,-16),
-            Position(190,439,-16),
-            Position(198,439,-16),
-            Position(198,431,-16),
+            Position(183,431,-16),
+            Position(183,438,-16),
+            Position(190,438,-16),
+            Position(197,438,-16),
+            Position(197,431,-16),
             loading_pos]
         # 小车位置信息
         car_info = [
@@ -871,18 +867,15 @@ class DemoPipeline:
         # 等待所有线程完成
         for thread in threads:
             thread.join()
-        rospy.sleep(35)
-        print("用时35s初始化完成")
+        rospy.sleep(15)
+        print("用时15s初始化完成")
         # 确保在循环开始前子列表已经按照betterTime+timeout排序
         groups = self.waybill_classification()
         iterators = [iter(group) for group in groups]
         # # 循环提取每个子列表的一个元素，直到所有子列表都为空
         flying_height_list = [-86, -92, -98]
         flying_height_iterator = itertools.cycle(flying_height_list)
-
-        should_continue = True  # 标志变量，控制最外层循环
-        # while not rospy.is_shutdown() and iterators:
-        while should_continue and not rospy.is_shutdown() and iterators:
+        while not rospy.is_shutdown() and iterators:
             flying_height = next(flying_height_iterator)
             # flying_height = -64
             # 使用副本循环，因为可能会移除空的子列表
@@ -890,9 +883,12 @@ class DemoPipeline:
             threads = []
             # 每个迭代器对应一个已经排序的子列表
             for it in iterators[:]:
-                if not should_continue:
-                    break
                 while True:  # 在每个迭代器中使用 while 循环
+                    if rospy.get_time() - running_start_time > 3600:
+                        # 打印总得分并退出循环
+                        print('超过3600秒，结束循环。')
+                        print('Total waybill finished:', self.waybill_count_finish, ', Total score:', self.score)
+                        break
                     try:
                         # 尝试从当前迭代器中提取一个订单
                         print("********************")
@@ -903,12 +899,13 @@ class DemoPipeline:
                         state = WorkState.SELACT_WAYBILL_CAR_DRONE
                         # 在 running() 方法中为每个线程初始化 is_empty_car
                         is_empty_car = False     # 初始化为 False，表示默认不是空车
+                        bind_cargo_attempts = 0  # 用于跟踪绑定货物的尝试次数
 
                         select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
-                        if self.waybill_count_start > 1 and (select_start_time_ms > (waybill['orderTime'] + 125000)) and ((select_start_time_ms + 15000 > (waybill['timeout'])) or (select_start_time_ms + 135000 > ((waybill['timeout'] - waybill['betterTime'])/8)+waybill['betterTime']) or (select_start_time_ms + 125000 > waybill['betterTime'])):
+                        if self.waybill_count_start > 1 and (select_start_time_ms > (waybill['orderTime'] + 20000)) and ((select_start_time_ms + 15000 > (waybill['timeout'])) or (select_start_time_ms + 135000 > ((waybill['betterTime'] + waybill['timeout']))/2)):
                             # 丢弃这一单，直接开始下一单
-                            # 需要满足条件
-                            self.giveup_waybill += 1
+                            # 需要满足条件：比ordertime大于6s，如果小于6s有可能挂不上单
+                            self.loss_waybill += 1
                             print(f"当前订单{waybill['index']}不符合绑定要求，直接放弃该订单，开始提取下一单")
                             print(f"当前订单提取时间: {select_start_time_ms}")
                             print(f"订单时间 orderTime: {waybill['orderTime']} - 毫秒戳")
@@ -922,7 +919,7 @@ class DemoPipeline:
                             print("********************")
                             thread = threading.Thread(
                                 target=self.dispatching, 
-                                args=(car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car)
+                                args=(car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car, bind_cargo_attempts)
                             )
                             threads.append(thread)
                             thread.start()
