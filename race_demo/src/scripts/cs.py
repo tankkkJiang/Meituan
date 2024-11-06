@@ -425,7 +425,7 @@ class DemoPipeline:
     def dispatching(self, car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car, bind_cargo_attempts):       
         flag = True
         waybill_start_time = rospy.Time.now()
-        print(f"已开始的订单数{self.waybill_count_start}: Begin to dispatch, 还未进入选车机")    
+        print(f"订单{waybill['index']}: Begin to dispatch, 还未进入选车机")      
         while not rospy.is_shutdown():
             if state == WorkState.SELACT_WAYBILL_CAR_DRONE:
                 if self.waybill_count_start == 0:
