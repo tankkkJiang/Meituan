@@ -453,9 +453,7 @@ class DemoPipeline:
                 start_to_dispatch_time = (rospy.Time.now() - waybill_start_time).to_sec()
                 print(f"已开始的订单数{self.waybill_count_start}, 丢弃订单数{self.giveup_waybill}, 失败订单数{self.loss_waybill}, 当前订单{waybill['index']}的小车无人机开始进行初始化，从提取订单到初始化等待了{start_to_dispatch_time}秒")
                 dispatching_start_time = rospy.Time.now()
-                if self.waybill_count_start == 1:
-                    print("第一单需要休眠3s直到到达装载点")
-                    rospy.sleep(3)
+
                 while True:
                     car_physical_status = next(
                         (car for car in self.car_physical_status if self.des_pos_reached(car.pos.position, loading_pos, 1) and car.car_work_state == CarPhysicalStatus.CAR_READY), None)
@@ -545,7 +543,10 @@ class DemoPipeline:
                     print(f"无人机换电用时:{DRONE_BATTERY_REPLACEMENT_time}秒，开始进入绑定外卖环节")
                     state = WorkState.MOVE_CARGO_IN_DRONE
             elif state == WorkState.MOVE_CARGO_IN_DRONE:
-                MOVE_CARGO_IN_DRONE_start = rospy.Time.now()            
+                MOVE_CARGO_IN_DRONE_start = rospy.Time.now()
+                if self.waybill_count_start == 1:
+                    print("第一单绑外卖前需要休眠7s")
+                    rospy.sleep(7)
                 print(f"订单{waybill['index']},car_sn:{car_sn},drone_sn:{drone_sn}:开始绑外卖")
                 cargo_bind_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
                 print(f"货物绑定时间戳: {cargo_bind_time_ms} 毫秒时间戳")
