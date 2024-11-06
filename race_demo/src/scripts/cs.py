@@ -333,8 +333,7 @@ class DemoPipeline:
     # 移动单辆小车
     def move_car(self, car):
         # print("移动单辆小车")
-        if self.waybill_count_start == 1:
-            car.set_target()
+        car.set_target()
         car_physical_status = next(
             (cps for cps in self.car_physical_status if cps.sn == car.car_sn), None)
         car_pos = car_physical_status.pos.position
@@ -342,7 +341,6 @@ class DemoPipeline:
             car.car_sn, car_pos, car.target_pos, 0, WorkState.SELACT_WAYBILL_CAR_DRONE
         )
         # 更新小车当前位置和目标位置
-        car.set_target()
     
     # 小车按照循环点移动
     def move_car_to_target_pos(self, car_list):
