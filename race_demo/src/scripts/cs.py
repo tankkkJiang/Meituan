@@ -144,7 +144,7 @@ class DemoPipeline:
 
     # 移动地面车辆的函数
     def move_car_with_start_and_end(self, car_sn, start, end, time_est, next_state):
-        print("与环境信息交流，开始移动")
+        # print("与环境信息交流，开始移动")
         msg = UserCmdRequest()
         msg.peer_id = self.peer_id
         msg.task_guid = self.task_guid
@@ -330,7 +330,7 @@ class DemoPipeline:
 
     # 移动单辆小车
     def move_car(self, car):
-        print("移动单辆小车")
+        # print("移动单辆小车")
         car_physical_status = next(
             (cps for cps in self.car_physical_status if cps.sn == car.car_sn), None)
         car_pos = car_physical_status.pos.position
@@ -455,8 +455,8 @@ class DemoPipeline:
                 print(f"已开始的订单数{self.waybill_count_start}, 丢弃订单数{self.loss_waybill}, 当前订单{waybill['index']}的小车无人机开始进行初始化，从提取订单到初始化等待了{start_to_dispatch_time}秒")
                 dispatching_start_time = rospy.Time.now()
                 if self.waybill_count_start == 1:
-                    print("第一单需要休眠20s直到到达装载点")
-                    rospy.sleep(20)
+                    print("第一单需要休眠5s直到到达装载点")
+                    rospy.sleep(5)
                 while True:
                     car_physical_status = next(
                         (car for car in self.car_physical_status if self.des_pos_reached(car.pos.position, loading_pos, 1) and car.car_work_state == CarPhysicalStatus.CAR_READY), None)
@@ -906,9 +906,10 @@ class DemoPipeline:
                         bind_cargo_attempts = 0  # 用于跟踪绑定货物的尝试次数
 
                         select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
-                        if self.waybill_count_start > 1 and (select_start_time_ms > (waybill['orderTime'] + 80000)) and ((select_start_time_ms + 15000 > (waybill['timeout'])) or (select_start_time_ms + 135000 > ((waybill['timeout'] - waybill['betterTime'])/8)+waybill['betterTime']) or (select_start_time_ms + 125000 > waybill['betterTime'])):
+                        if self.waybill_count_start > 1 and (select_start_time_ms > (waybill['orderTime'] + 100000)) and ((select_start_time_ms + 15000 > (waybill['timeout'])) or (select_start_time_ms + 135000 or (select_start_time_ms + 135000 > waybill['betterTime']))):
                             # 丢弃这一单，直接开始下一单
                             # 需要满足条件：比ordertime大于6s，如果小于6s有可能挂不上单
+                            # 不同组的单间隔orderTime为100秒左右
                             self.loss_waybill += 1
                             print(f"当前订单{waybill['index']}不符合绑定要求，直接放弃该订单，开始提取下一单")
                             print(f"当前订单提取时间: {select_start_time_ms}")
