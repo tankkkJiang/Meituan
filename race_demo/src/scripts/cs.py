@@ -146,7 +146,7 @@ class DemoPipeline:
 
     # 移动地面车辆的函数
     def move_car_with_start_and_end(self, car_sn, start, end, time_est, next_state):
-        # print("与环境信息交流，开始移动")
+        print(f"{car_sn}与环境信息交流，开始移动")
         msg = UserCmdRequest()
         msg.peer_id = self.peer_id
         msg.task_guid = self.task_guid
@@ -332,11 +332,12 @@ class DemoPipeline:
 
     # 移动单辆小车
     def move_car(self, car):
-        # print("移动单辆小车")
+        print("移动单辆小车")
         car.set_target()
         car_physical_status = next(
             (cps for cps in self.car_physical_status if cps.sn == car.car_sn), None)
         car_pos = car_physical_status.pos.position
+        print(f"car{car.car_sn}, 现在的位置:{car_pos}, 移动目标位置:{car.target_pos}")
         self.move_car_with_start_and_end(
             car.car_sn, car_pos, car.target_pos, 0, WorkState.SELACT_WAYBILL_CAR_DRONE
         )
@@ -357,7 +358,7 @@ class DemoPipeline:
         # 等待所有线程完成
         for thread in threads:
             thread.join()
-        # print("小车位置初始化完成")
+        print("小车位置移动完成")
 
     def waybill_classification(self):  # 这里的订单分类只分最优的4个卸货点
         waybill_points = [
@@ -544,7 +545,7 @@ class DemoPipeline:
                 MOVE_CARGO_IN_DRONE_start = rospy.Time.now()
                 if self.waybill_count_start == 1:
                     print("第一单绑外卖前需要休眠7s")
-                    rospy.sleep(7)
+                    rospy.sleep(5)
                 print(f"订单{waybill['index']},car_sn:{car_sn},drone_sn:{drone_sn}:开始绑外卖")
                 cargo_bind_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
                 print(f"货物绑定时间戳: {cargo_bind_time_ms} 毫秒时间戳")
@@ -597,10 +598,10 @@ class DemoPipeline:
                 # 检查小车是否处于运动状态
                 while True:
                     timeout += 1
-                    if timeout > 30:
-                        print("超过15s没有移动，重启循环点移动")
+                    if timeout > 100:
+                        print("超过50s没有移动，重启循环点移动")
                         self.move_car_to_target_pos(car_list)
-                        timeout = -20
+                        timeout = -200
                     car_physical_status = next(
                         (car for car in self.car_physical_status if car.sn == car_sn), None)
                     if car_physical_status is None:
@@ -609,18 +610,18 @@ class DemoPipeline:
                         continue
                     
                     if car_physical_status.car_work_state == CarPhysicalStatus.CAR_RUNNING:
-                        # print(f"car_sn:{car_sn}小车已经进入running状态。")
+                        print(f"car_sn:{car_sn}小车已经进入running状态, 但不一定离开装载点，需继续检查。")
                         car_physical_status = next(
                             (car for car in self.car_physical_status if car.sn == car_sn), None)
                         car_pos = car_physical_status.pos.position
-                        if not self.des_pos_reached(loading_pos, car_pos, 1):
-                            # print(f"car_sn:{car_sn}小车小车位置已经不在装载点，正在移动...")
+                        if not self.des_pos_reached(loading_pos, car_pos, 0.5):
+                            print(f"car_sn:{car_sn}小车小车位置已经不在装载点，正在移动...")
                             break  # 小车已经开始运动，跳出循环
                         else:
                             # print("虽然running状态但还未移动")
                             rospy.sleep(3)
                     else:
-                        # print("小车未在运动状态，等待小车开始移动...")
+                        print("小车未在运动状态，等待小车开始移动...")
                         rospy.sleep(0.5)  # 等待一秒再检查小车状态
 
                 while not car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
