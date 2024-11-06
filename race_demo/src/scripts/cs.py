@@ -36,7 +36,8 @@ import pymtmap
 
 Moving_car_cycle = 35
 Preparation_Cycle = 18
-# 大圈小车移动17秒
+# 小圈小车移动15s，大圈小车移动17s
+
 
 class WorkState(Enum):
     START = 1
@@ -146,7 +147,7 @@ class DemoPipeline:
 
     # 移动地面车辆的函数
     def move_car_with_start_and_end(self, car_sn, start, end, time_est, next_state):
-        print("调用移动小车函数，发送信息")
+        # print("调用移动小车函数，发送信息")
         msg = UserCmdRequest()
         msg.peer_id = self.peer_id
         msg.task_guid = self.task_guid
@@ -332,7 +333,7 @@ class DemoPipeline:
 
     # 移动单辆小车
     def move_car(self, car):
-        print("调用move_car函数，移动单辆小车")
+        # print("调用move_car函数，移动单辆小车")
         car_physical_status = next(
             (cps for cps in self.car_physical_status if cps.sn == car.car_sn), None)
         car_pos = car_physical_status.pos.position
@@ -870,8 +871,8 @@ class DemoPipeline:
         # 等待所有线程完成
         for thread in threads:
             thread.join()
-        rospy.sleep(20)
-        print("用时20s初始化完成")
+        rospy.sleep(35)
+        print("用时35s初始化完成")
         # 确保在循环开始前子列表已经按照betterTime+timeout排序
         groups = self.waybill_classification()
         iterators = [iter(group) for group in groups]
