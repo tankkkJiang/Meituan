@@ -347,12 +347,17 @@ class DemoPipeline:
     def move_car_to_target_pos(self, car_list):
         print("正在调用循环小车移动")
         threads = []
+        print(f"car list:{car_list}")
+        processed_cars = set()  # 使用集合跟踪已经创建线程的小车
         # 创建所有线程
         for car in car_list:
-            thread = threading.Thread(
-                target=self.move_car, args=(car,)
-            )
-            threads.append(thread)
+            if car.car_sn not in processed_cars:  # 检查小车是否已经创建线程
+                print(f"car{car.car_sn}开始创建线程")
+                processed_cars.add(car.car_sn)  # 将小车加入已处理集合
+                thread = threading.Thread(
+                    target=self.move_car, args=(car,)
+                )
+                threads.append(thread)
         for thread in threads:  
             thread.start()
         # 等待所有线程完成
