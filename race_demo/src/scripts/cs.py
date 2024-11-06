@@ -350,6 +350,8 @@ class DemoPipeline:
             thread = threading.Thread(
                 target=self.move_car, args=(car,)
             )
+            rospy.sleep(1)
+            print("进程之间睡眠1s")
             threads.append(thread)
         for thread in threads:  
             thread.start()
