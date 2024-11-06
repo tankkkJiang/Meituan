@@ -66,7 +66,7 @@ class Car:
         """设置移动目标"""
         self.target_index = (self.target_index + 1) % len(self.points)  # 逆时针选择下一个点
         self.target_pos = self.points[self.target_index]
-        print(f"车辆 {self.car_sn} 已更新，目标索引: {self.target_index}，目标位置: {self.target_pos}")
+        # print(f"车辆 {self.car_sn} 已更新，目标索引: {self.target_index}，目标位置: {self.target_pos}")
 
 
 
@@ -333,6 +333,8 @@ class DemoPipeline:
     # 移动单辆小车
     def move_car(self, car):
         # print("移动单辆小车")
+        if self.waybill_count_start == 1:
+            car.set_target()
         car_physical_status = next(
             (cps for cps in self.car_physical_status if cps.sn == car.car_sn), None)
         car_pos = car_physical_status.pos.position
@@ -452,8 +454,8 @@ class DemoPipeline:
                 print(f"已开始的订单数{self.waybill_count_start}, 丢弃订单数{self.giveup_waybill}, 失败订单数{self.loss_waybill}, 当前订单{waybill['index']}的小车无人机开始进行初始化，从提取订单到初始化等待了{start_to_dispatch_time}秒")
                 dispatching_start_time = rospy.Time.now()
                 if self.waybill_count_start == 1:
-                    print("第一单需要休眠5s直到到达装载点")
-                    rospy.sleep(5)
+                    print("第一单需要休眠3s直到到达装载点")
+                    rospy.sleep(3)
                 while True:
                     car_physical_status = next(
                         (car for car in self.car_physical_status if self.des_pos_reached(car.pos.position, loading_pos, 1) and car.car_work_state == CarPhysicalStatus.CAR_READY), None)
@@ -596,8 +598,8 @@ class DemoPipeline:
                 # 检查小车是否处于运动状态
                 while True:
                     timeout += 1
-                    if timeout > 6:
-                        print("超过3s没有移动，重启循环点移动")
+                    if timeout > 10:
+                        print("超过5s没有移动，重启循环点移动")
                         self.move_car_to_target_pos(car_list)
                         timeout = -20
                     car_physical_status = next(
