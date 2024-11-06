@@ -144,10 +144,18 @@ class DemoPipeline:
         print(response)
         if response.success:
             self.state = WorkState.SELACT_WAYBILL_CAR_DRONE
+    
+    # 检测位置到达的函数
+    def des_pos_reached(self, des_pos, cur_pos, threshold):
+        des = np.array([des_pos.x, des_pos.y, des_pos.z])
+        cur = np.array([cur_pos.x, cur_pos.y, cur_pos.z])
+        return np.linalg.norm(np.array(des - cur)) < threshold
 
     # 移动地面车辆的函数
     def move_car_with_start_and_end(self, car_sn, start, end, time_est, next_state):
         print(f"{car_sn}与环境信息交流，开始移动")
+
+        # 创建UserCmdRequest消息对象
         msg = UserCmdRequest()
         msg.peer_id = self.peer_id
         msg.task_guid = self.task_guid
@@ -156,34 +164,35 @@ class DemoPipeline:
         msg.car_route_info.way_point.append(start)
         msg.car_route_info.way_point.append(end)
         msg.car_route_info.yaw = 0.0
+
+        # 发送初始移动命令
         self.cmd_pub.publish(msg)
-        # rospy.sleep(time_est)
-        time = 0
-        while True:            
-            car_physical_status = next(
-                (cps for cps in self.car_physical_status if cps.sn == car_sn), None)
+        start_time = rospy.Time.now()  # 获取当前时间
+
+        while True:
+            # 获取当前小车状态
+            car_physical_status = next((cps for cps in self.car_physical_status if cps.sn == car_sn), None)
+            if car_physical_status is None:
+                print(f"未找到车辆 {car_sn} 的物理状态信息，等待重试...")
+                rospy.sleep(1)
+                continue
+
             car_pos = car_physical_status.pos.position
+
+            # 检查小车是否已经到达目的地
             if self.des_pos_reached(car_pos, end, 1):
                 print(f"{car_sn}到达目的地，结束调用")
                 break
-            rospy.sleep(1)
-            time += 1
-            if time > 2:
-                msg = UserCmdRequest()
-                msg.peer_id = self.peer_id
-                msg.task_guid = self.task_guid
-                msg.type = UserCmdRequest.USER_CMD_CAR_EXEC_ROUTE
-                msg.car_route_info.carSn = car_sn
-                msg.car_route_info.way_point.append(start)
-                msg.car_route_info.way_point.append(end)
-                msg.car_route_info.yaw = 0.0
+
+            # 如果小车在2秒内没有离开出发点，则重新发送移动命令
+            elapsed_time = (rospy.Time.now() - start_time).to_sec()
+            if elapsed_time > 2:
+                print(f"{car_sn}未在2秒内离开出发点，重新发送移动命令")
                 self.cmd_pub.publish(msg)
-        
-    # 检测位置到达的函数
-    def des_pos_reached(self, des_pos, cur_pos, threshold):
-        des = np.array([des_pos.x, des_pos.y, des_pos.z])
-        cur = np.array([cur_pos.x, cur_pos.y, cur_pos.z])
-        return np.linalg.norm(np.array(des - cur)) < threshold
+                start_time = rospy.Time.now()  # 重置开始时间
+
+            rospy.sleep(0.5)  # 每0.5秒检查一次
+
 
     # 往车上挪机
     def move_drone_on_car(self, car_sn, drone_sn, time_est, next_state):
@@ -357,12 +366,14 @@ class DemoPipeline:
         car.set_target()
         car_physical_status = next(
             (cps for cps in self.car_physical_status if cps.sn == car.car_sn), None)
-        car_pos = car_physical_status.pos.position
-        print(f"car{car.car_sn}, 现在的位置:{car_pos}, 移动目标位置:{car.target_pos}")
-        self.move_car_with_start_and_end(
-            car.car_sn, car_pos, car.target_pos, move_car_time, WorkState.SELACT_WAYBILL_CAR_DRONE
-        )
-        # 更新小车当前位置和目标位置
+        # 检查小车状态是否有效
+        if car_physical_status:
+            car_pos = car_physical_status.pos.position
+            print(f"car{car.car_sn}, 现在的位置: {car_pos}, 移动目标位置: {car.target_pos}")
+            self.move_car_with_start_and_end(car.car_sn, car_pos, car.target_pos, move_car_time, WorkState.SELACT_WAYBILL_CAR_DRONE)
+        else:
+            print(f"car{car.car_sn}未找到物理状态信息")
+            # 更新小车当前位置和目标位置
     
     # 小车按照循环点移动
     def move_car_to_target_pos(self, car_list):
@@ -372,15 +383,8 @@ class DemoPipeline:
         processed_cars = set()  # 使用集合跟踪已经创建线程的小车
         # 创建所有线程
         for car in car_list:
-            # if car.car_sn not in processed_cars:  # 检查小车是否已经创建线程
-            #     print(f"car{car.car_sn}开始创建线程")
-            #     processed_cars.add(car.car_sn)  # 将小车加入已处理集合
-            #     thread = threading.Thread(
-            #         target=self.move_car, args=(car,)
-            #     )
-            #     threads.append(thread)
-            if car.car_sn == 'SIM-MAGV-0001':
-                print(f"car{car.car_sn}开始创建线程,car")
+            if car.car_sn not in processed_cars:  # 检查小车是否已经创建线程
+                print(f"car{car.car_sn}开始创建线程")
                 processed_cars.add(car.car_sn)  # 将小车加入已处理集合
                 thread = threading.Thread(
                     target=self.move_car, args=(car,)
