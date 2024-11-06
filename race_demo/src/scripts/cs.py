@@ -35,7 +35,7 @@ import pymtmap
 # demo定义的状态流转
 
 Moving_car_cycle = 35
-Preparation_Cycle = 20
+Preparation_Cycle = 18
 
 class WorkState(Enum):
     START = 1
@@ -824,17 +824,26 @@ class DemoPipeline:
             self.loading_cargo_point['y'],
             self.loading_cargo_point['z']
         )
-        # 起飞点
-        takeoff_pos = Position(183,431,-16)
-        # 降落点
-        landing_pos = Position(183,438,-16)
-        # 定义循环路径点
+        # 小/大起飞点
+        # takeoff_pos = Position(183,431,-16)
+        takeoff_pos = Position(182,431,-16)
+        # 小/大降落点
+        # landing_pos = Position(183,438,-16)
+        landing_pos = Position(182,439,-16)
+        # 定义小/大循环路径点
+        # points = [
+        #     Position(183,431,-16),
+        #     Position(183,438,-16),
+        #     Position(190,438,-16),
+        #     Position(197,438,-16),
+        #     Position(197,431,-16),
+        #     loading_pos]
         points = [
-            Position(183,431,-16),
-            Position(183,438,-16),
-            Position(190,438,-16),
-            Position(197,438,-16),
-            Position(197,431,-16),
+            Position(182,431,-16),
+            Position(182,439,-16),
+            Position(190,439,-16),
+            Position(198,439,-16),
+            Position(198,431,-16),
             loading_pos]
         # 小车位置信息
         car_info = [
@@ -863,8 +872,8 @@ class DemoPipeline:
         # 等待所有线程完成
         for thread in threads:
             thread.join()
-        rospy.sleep(30)
-        print("用时30s初始化完成")
+        rospy.sleep(20)
+        print("用时20s初始化完成")
         # 确保在循环开始前子列表已经按照betterTime+timeout排序
         groups = self.waybill_classification()
         iterators = [iter(group) for group in groups]
@@ -881,25 +890,10 @@ class DemoPipeline:
             # 创建每个子订单组的进程
             threads = []
             # 每个迭代器对应一个已经排序的子列表
-
-            if rospy.get_time() - running_start_time > 3600:
-                print('超过3600秒，停止创建新线程，等待所有线程完成。')
-                should_continue = False
-                break
-
             for it in iterators[:]:
                 if not should_continue:
                     break
                 while True:  # 在每个迭代器中使用 while 循环
-                    if rospy.get_time() - running_start_time > 3600:
-                        # 打印总得分并退出循环
-                        print('超过3600秒，结束循环。')
-                        for thread in threads:
-                            thread.join()
-                        print('所有线程完成，结束程序。')
-                        print('Total waybill finished:', self.waybill_count_finish, ', Total score:', self.score)
-                        should_continue = False
-                        break
                     try:
                         # 尝试从当前迭代器中提取一个订单
                         print("********************")
