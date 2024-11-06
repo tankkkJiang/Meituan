@@ -354,6 +354,8 @@ class DemoPipeline:
             print("进程之间睡眠1s")
             threads.append(thread)
         for thread in threads:  
+            rospy.sleep(1)
+            print("进程启动之间睡眠1s")
             thread.start()
         # 等待所有线程完成
         for thread in threads:
