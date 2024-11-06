@@ -887,11 +887,11 @@ class DemoPipeline:
             # 每个迭代器对应一个已经排序的子列表
             for it in iterators[:]:
                 while True:  # 在每个迭代器中使用 while 循环
-                    if rospy.get_time() - self.running_start_time > 3600:
-                        # 打印总得分并退出循环
-                        print('超过3600秒，结束循环。')
-                        print('Total waybill finished:', self.waybill_count_finish, ', Total score:', self.score)
-                        break
+                    # if rospy.get_time() - self.running_start_time > 3600:
+                    #     # 打印总得分并退出循环
+                    #     print('超过3600秒，结束循环。')
+                    #     print('Total waybill finished:', self.waybill_count_finish, ', Total score:', self.score)
+                    #     break
                     try:
                         # 尝试从当前迭代器中提取一个订单
                         print("********************")
