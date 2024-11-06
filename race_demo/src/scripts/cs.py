@@ -583,6 +583,9 @@ class DemoPipeline:
                     rospy.sleep(Preparation_Cycle-MOVE_CAR_TO_LEAVING_POINT_time)
 
                 print(f"car_sn:{car_sn}开始运动")
+                if self.waybill_count_start == 1:
+                    rospy.sleep(20)
+                    print("第一单先睡20s，再启动小车")
                 MOVE_CAR_TO_LEAVING_POINT_start = rospy.Time.now()
                 # 小车搭载挂外卖的无人机到达起飞点
                 self.move_car_to_target_pos(car_list)
