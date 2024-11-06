@@ -34,8 +34,8 @@ import pymtmap
 
 # demo定义的状态流转
 
-Moving_car_cycle = 35
-Preparation_Cycle = 18
+Moving_car_cycle = 40
+Preparation_Cycle = 23
 # 小圈小车移动15s，大圈小车移动17s
 
 
