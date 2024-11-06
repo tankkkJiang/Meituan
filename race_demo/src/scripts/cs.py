@@ -66,7 +66,7 @@ class Car:
         """设置移动目标"""
         self.target_index = (self.target_index + 1) % len(self.points)  # 逆时针选择下一个点
         self.target_pos = self.points[self.target_index]
-        # print(f"车辆 {self.car_sn} 已更新，目标索引: {self.target_index}，目标位置: {self.target_pos}")
+        print(f"车辆 {self.car_sn} 已更新，目标索引: {self.target_index}，目标位置: {self.target_pos}")
 
 
 
@@ -597,8 +597,8 @@ class DemoPipeline:
                 # 检查小车是否处于运动状态
                 while True:
                     timeout += 1
-                    if timeout > 10:
-                        print("超过5s没有移动，重启循环点移动")
+                    if timeout > 30:
+                        print("超过15s没有移动，重启循环点移动")
                         self.move_car_to_target_pos(car_list)
                         timeout = -20
                     car_physical_status = next(
