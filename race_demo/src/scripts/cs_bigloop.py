@@ -951,3 +951,5 @@ class DemoPipeline:
 if __name__ == '__main__':
     race_demo = DemoPipeline()
     race_demo.running()
+
+# 预计分数为6000
