@@ -343,19 +343,15 @@ class DemoPipeline:
     
     # 小车按照循环点移动
     def move_car_to_target_pos(self, car_list):
-        print("正在调用循环小车移动，创建多个线程")
+        print("正在创建多个小车移动线程")
         threads = []
         # 创建所有线程
         for car in car_list:
             thread = threading.Thread(
                 target=self.move_car, args=(car,)
             )
-            rospy.sleep(1)
-            print("进程之间睡眠1s")
             threads.append(thread)
         for thread in threads:  
-            rospy.sleep(1)
-            print("进程启动之间睡眠1s")
             thread.start()
         # 等待所有线程完成
         for thread in threads:
@@ -867,8 +863,8 @@ class DemoPipeline:
         # 等待所有线程完成
         for thread in threads:
             thread.join()
-        rospy.sleep(15)
-        print("用时15s初始化完成")
+        rospy.sleep(30)
+        print("用时30s初始化完成")
         # 确保在循环开始前子列表已经按照betterTime+timeout排序
         groups = self.waybill_classification()
         iterators = [iter(group) for group in groups]
