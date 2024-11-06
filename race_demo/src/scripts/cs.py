@@ -635,10 +635,10 @@ class DemoPipeline:
                             print(f"car_sn:{car_sn}小车小车位置已经不在装载点，正在移动...")
                             break  # 小车已经开始运动，跳出循环
                         else:
-                            print("虽然running状态但还未移动")
+                            # print("虽然running状态但还未移动")
                             rospy.sleep(3)
                     else:
-                        print("小车未在运动状态，等待小车开始移动...")
+                        # print("小车未在运动状态，等待小车开始移动...")
                         rospy.sleep(0.5)  # 等待一秒再检查小车状态
 
                 while not car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
