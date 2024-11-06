@@ -36,6 +36,7 @@ import pymtmap
 
 Moving_car_cycle = 35
 Preparation_Cycle = 20
+move_car_time = 15
 
 class WorkState(Enum):
     START = 1
@@ -157,6 +158,10 @@ class DemoPipeline:
         msg.car_route_info.yaw = 0.0
         self.cmd_pub.publish(msg)
         rospy.sleep(time_est)
+        car_physical_status = next(
+            (cps for cps in self.car_physical_status if cps.sn == car_sn), None)
+        car_pos = car_physical_status.pos.position
+        print(f"与环境交流后移车是否成功，初始{start}，目的地{end}，当前位置{car_pos}")
         
     # 检测位置到达的函数
     def des_pos_reached(self, des_pos, cur_pos, threshold):
@@ -339,7 +344,7 @@ class DemoPipeline:
         car_pos = car_physical_status.pos.position
         print(f"car{car.car_sn}, 现在的位置:{car_pos}, 移动目标位置:{car.target_pos}")
         self.move_car_with_start_and_end(
-            car.car_sn, car_pos, car.target_pos, 0, WorkState.SELACT_WAYBILL_CAR_DRONE
+            car.car_sn, car_pos, car.target_pos, move_car_time, WorkState.SELACT_WAYBILL_CAR_DRONE
         )
         # 更新小车当前位置和目标位置
     
