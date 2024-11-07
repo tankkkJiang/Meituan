@@ -96,7 +96,7 @@ class DemoPipeline:
         self.map_boundary = self.config['taskParam']['mapBoundaryInfo']
 
         self.waybill_infos = self.config['taskParam']['waybillParamList']
-        # print(self.waybill_infos)
+        print(self.waybill_infos)
         # 在派发前按 betterTime + timeout 排序waybills
         # self.waybill_infos.sort(key=lambda x: x['betterTime'] + x['timeout'])
         self.waybill_infos.sort(key=lambda x: x['orderTime'])

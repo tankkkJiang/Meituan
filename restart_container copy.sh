@@ -30,4 +30,18 @@ cp /home/sdk_for_user/msg/* /root/catkin_ws/src/race_demo/msg/
 cp /home/sdk_for_user/map_client_sdk/for_py/voxel_map_final.bin /root/catkin_ws/
 ./home/run.sh
 
+# 获取环境的日志
+docker exec -it race_scene_sdk_container /bin/bash
+docker cp race_scene_sdk_container:/evaluator/config/race.log .
 
+
+# 提交
+appKey：caef89855ac242dde4285a160cebd253
+appSecret：d97f48248c7eb859fa612eed9451adda
+
+
+docker commit race_user_sdk_container  race_user:1006.888
+
+docker tag race_user:1006.888 uav-challenge.tencentcloudcr.com/uav_challenge_2024/caef89855ac242dde4285a160cebd253:1006.888
+
+docker push uav-challenge.tencentcloudcr.com/uav_challenge_2024/caef89855ac242dde4285a160cebd253:1006.888
