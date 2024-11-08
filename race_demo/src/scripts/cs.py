@@ -244,7 +244,7 @@ class DemoPipeline:
         land_point.timeoutsec = 1000
         msg.drone_way_point_info.way_point.append(land_point)
         self.cmd_pub.publish(msg)
-        rospy.sleep(3)
+        rospy.sleep(1)
         # 仅在出发状态时释放信号量，通知后续车辆可以移动
         if is_departure:
             self.drone_takeoff_semaphore.release()
@@ -417,11 +417,6 @@ class DemoPipeline:
                 if distance < 1:
                     groups[index].append(waybill)
                     break 
-        # # 在每个组内按 'betterTime' + 'timeout' 进行排序
-        # for group in groups:
-        #     group.sort(key=lambda x: x['betterTime'] + x['timeout'])
-        # # 现在根据每个组中第一个条目的 'betterTime' + 'timeout' 对所有组进行排序，如果组不为空
-        # sorted_groups = sorted(groups, key=lambda g: g[0]['betterTime'] + g[0]['timeout'] if g else float('inf'))
 
         # 在每个组内按orderTime进行排序
         for group in groups:
@@ -429,12 +424,6 @@ class DemoPipeline:
         # 现在根据每个组中第一个条目的orderTime对所有组进行排序，如果组不为空
         sorted_groups = sorted(groups, key=lambda g: g[0]['orderTime'] if g else float('inf'))
 
-        # # 在每个组内按 orderTime + timeout 进行排序
-        # for group in groups:
-        #     group.sort(key=lambda x: x['orderTime'] + x['timeout'])
-
-        # # 现在根据每个组中第一个条目的 orderTime + timeout 对所有组进行排序，如果组不为空
-        # sorted_groups = sorted(groups, key=lambda g: g[0]['orderTime'] + g[0]['timeout'] if g else float('inf'))
         return sorted_groups
 
     # 订单分组
@@ -581,8 +570,8 @@ class DemoPipeline:
             elif state == WorkState.MOVE_CARGO_IN_DRONE:
                 MOVE_CARGO_IN_DRONE_start = rospy.Time.now()
                 if self.waybill_count_start == 1:
-                    print("第一单绑外卖前需要休眠7s")
-                    rospy.sleep(5)
+                    print("第一单绑外卖前需要休眠3s")
+                    rospy.sleep(3)
                 print(f"订单{waybill['index']},car_sn:{car_sn},drone_sn:{drone_sn}:开始绑外卖")
                 cargo_bind_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
                 print(f"货物绑定时间戳: {cargo_bind_time_ms} 毫秒时间戳")
@@ -893,11 +882,6 @@ class DemoPipeline:
             # 每个迭代器对应一个已经排序的子列表
             for it in iterators[:]:
                 while True:  # 在每个迭代器中使用 while 循环
-                    # if rospy.get_time() - self.running_start_time > 3600:
-                    #     # 打印总得分并退出循环
-                    #     print('超过3600秒，结束循环。')
-                    #     print('Total waybill finished:', self.waybill_count_finish, ', Total score:', self.score)
-                    #     break
                     try:
                         # 尝试从当前迭代器中提取一个订单
                         print("********************")
