@@ -321,12 +321,14 @@ class DemoPipeline:
         # 最外侧的两个绕路
         elif car_sn == "SIM-MAGV-0002":
             print("移动2号车")
+            middle = Position(183, 438, -16)
             msg.car_route_info.way_point.append(start)
+            msg.car_route_info.way_point.append(middle)
             msg.car_route_info.way_point.append(end)
 
         elif car_sn == "SIM-MAGV-0005":
             print("移动5号车")
-            middle_1 = Position(193, 438, -16)
+            middle = Position(190, 438, -16)
             msg.car_route_info.way_point.append(start)
             msg.car_route_info.way_point.append(middle)
             msg.car_route_info.way_point.append(end)
@@ -334,23 +336,25 @@ class DemoPipeline:
         # 中间的两边也要绕一下
         elif car_sn == "SIM-MAGV-0003":
             print("移动3号车")
-            middle = Position(183, 431, -16)
+            middle_1 = Position(189, 446, -16)
+            middle_2 = Position(189, 438, -16)
             msg.car_route_info.way_point.append(start)
-            msg.car_route_info.way_point.append(middle)
+            msg.car_route_info.way_point.append(middle_1)
+            msg.car_route_info.way_point.append(middle_2)
             msg.car_route_info.way_point.append(end)
 
         elif car_sn == "SIM-MAGV-0006":
             print("移动6号车")
-            middle = Position(193, 446, -16)
+            middle_1 = Position(193, 446, -16)
+            middle_2 = Position(193, 438, -16)
             msg.car_route_info.way_point.append(start)
-            msg.car_route_info.way_point.append(middle)
+            msg.car_route_info.way_point.append(middle_1)
+            msg.car_route_info.way_point.append(middle_2)
             msg.car_route_info.way_point.append(end)
         
         elif car_sn == "SIM-MAGV-0004":
             print("移动4号车")
-            middle = Position(197, 431, -16)
             msg.car_route_info.way_point.append(start)
-            msg.car_route_info.way_point.append(middle)
             msg.car_route_info.way_point.append(end)
 
         msg.car_route_info.yaw = 0.0
@@ -823,25 +827,25 @@ class DemoPipeline:
             self.loading_cargo_point['z']
         )
         # 起飞点
-        takeoff_pos = Position(186,431,-16)
+        takeoff_pos = Position(183,431,-16)
         # 降落点
-        landing_pos = Position(185,438,-16)
+        landing_pos = Position(183,438,-16)
         # 定义循环路径点
         points = [
-            Position(186,431,-16),
-            Position(185,438,-16),
-            Position(193,438,-16),
-            Position(199,432,-16),
-            Position(194,431,-16),
+            Position(183,431,-16),
+            Position(183,438,-16),
+            Position(190,438,-16),
+            Position(197,438,-16),
+            Position(197,431,-16),
             loading_pos]
         # 小车位置信息
         car_info = [
             ("SIM-MAGV-0001", 5, points),
-            ("SIM-MAGV-0002", 1, points),
-            ("SIM-MAGV-0003", 0, points),
+            ("SIM-MAGV-0002", 0, points),
+            ("SIM-MAGV-0003", 2, points),
             ("SIM-MAGV-0004", 4, points),
-            ("SIM-MAGV-0005", 3, points),
-            ("SIM-MAGV-0006", 2, points)
+            ("SIM-MAGV-0005", 1, points),
+            ("SIM-MAGV-0006", 3, points)
         ]
         # 初始化车辆对象
         car_list = [
