@@ -34,8 +34,8 @@ import pymtmap
 
 # demo定义的状态流转
 
-Moving_car_cycle = 32
-Preparation_Cycle = 17
+Moving_car_cycle = 31
+Preparation_Cycle = 16
 move_car_time = 15
 
 class WorkState(Enum):
@@ -630,36 +630,6 @@ class DemoPipeline:
                 MOVE_CAR_TO_LEAVING_POINT_start = rospy.Time.now()
                 # 小车搭载挂外卖的无人机到达起飞点
                 self.move_car_to_target_pos(car_list)
-                
-                # timeout = 0
-                # # 检查小车是否处于运动状态
-                # while True:
-                #     timeout += 1
-                #     if timeout > 100:
-                #         print("超过50s没有移动，重启循环点移动")
-                #         self.move_car_to_target_pos(car_list)
-                #         timeout = -200
-                #     car_physical_status = next(
-                #         (car for car in self.car_physical_status if car.sn == car_sn), None)
-                #     if car_physical_status is None:
-                #         print("未找到对应的小车状态信息")
-                #         rospy.sleep(0.5)  # 短暂等待后再次检查
-                #         continue
-                    
-                #     if car_physical_status.car_work_state == CarPhysicalStatus.CAR_RUNNING:
-                #         print(f"car_sn:{car_sn}小车已经进入running状态, 但不一定离开装载点，需继续检查。")
-                #         car_physical_status = next(
-                #             (car for car in self.car_physical_status if car.sn == car_sn), None)
-                #         car_pos = car_physical_status.pos.position
-                #         if not self.des_pos_reached(loading_pos, car_pos, 0.5):
-                #             print(f"car_sn:{car_sn}小车小车位置已经不在装载点，正在移动...")
-                #             break  # 小车已经开始运动，跳出循环
-                #         else:
-                #             # print("虽然running状态但还未移动")
-                #             rospy.sleep(3)
-                #     else:
-                #         # print("小车未在运动状态，等待小车开始移动...")
-                #         rospy.sleep(0.5)  # 等待一秒再检查小车状态
 
                 while not car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
                     # print(f"car_sn:{car_sn}小车正在移动中...小车状态为:{car_physical_status.car_work_state}")
@@ -943,8 +913,7 @@ class DemoPipeline:
                         select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
                         if self.waybill_count_start > 1 and (select_start_time_ms > (waybill['orderTime'] + 130000)) and ((select_start_time_ms + 15000 > (waybill['timeout'])) or (select_start_time_ms + 120000 > ((waybill['timeout'] - waybill['betterTime'])/8)+waybill['betterTime'])):
                             # 丢弃这一单，直接开始下一单
-                            # 需要满足条件：比ordertime大于6s，如果小于6s有可能挂不上单
-                            # 不同组的单间隔orderTime为100秒左右
+                            # 不同组的单间隔orderTime为120-150秒左右
                             self.giveup_waybill += 1
                             print(f"当前订单{waybill['index']}不符合绑定要求，直接放弃该订单，开始提取下一单")
                             print(f"当前订单提取时间: {select_start_time_ms}")
