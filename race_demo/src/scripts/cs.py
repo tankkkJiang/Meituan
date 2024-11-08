@@ -35,8 +35,8 @@ import pymtmap
 # demo定义的状态流转
 
 Moving_car_cycle = 31
-Preparation_Cycle = 16
-move_car_time = 15
+Preparation_Cycle = 16.5
+move_car_time = 14.5
 
 class WorkState(Enum):
     START = 1
@@ -574,7 +574,7 @@ class DemoPipeline:
                     rospy.sleep(3)
                 print(f"订单{waybill['index']},car_sn:{car_sn},drone_sn:{drone_sn}:开始绑外卖")
                 cargo_bind_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
-                print(f"货物绑定时间戳: {cargo_bind_time_ms} 毫秒时间戳")
+                print(f"订单{waybill['index']}: 货物绑定时间 : {cargo_bind_time_ms} - 毫秒戳")
                 print(f"订单{waybill['index']}: 订单时间 orderTime: {waybill['orderTime']} - 毫秒戳")
                 print(f"订单{waybill['index']}: 超时时间 timeout: {waybill['timeout']} - 毫秒戳")
                 car_physical_status = next(
