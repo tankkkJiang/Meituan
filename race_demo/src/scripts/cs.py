@@ -34,9 +34,9 @@ import pymtmap
 
 # demo定义的状态流转
 
-Moving_car_cycle = 30
-Preparation_Cycle = 16
-move_car_time = 14
+Moving_car_cycle = 32
+Preparation_Cycle = 17
+move_car_time = 15
 
 class WorkState(Enum):
     START = 1
@@ -941,7 +941,7 @@ class DemoPipeline:
                         bind_cargo_attempts = 0  # 用于跟踪绑定货物的尝试次数
 
                         select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
-                        if self.waybill_count_start > 1 and (select_start_time_ms > (waybill['orderTime'] + 135000)) and ((select_start_time_ms + 15000 > (waybill['timeout'])) or (select_start_time_ms + 135000 > ((waybill['timeout'] - waybill['betterTime'])/4)+waybill['betterTime'])):
+                        if self.waybill_count_start > 1 and (select_start_time_ms > (waybill['orderTime'] + 130000)) and ((select_start_time_ms + 15000 > (waybill['timeout'])) or (select_start_time_ms + 130000 > ((waybill['timeout'] - waybill['betterTime'])/4)+waybill['betterTime'])):
                             # 丢弃这一单，直接开始下一单
                             # 需要满足条件：比ordertime大于6s，如果小于6s有可能挂不上单
                             # 不同组的单间隔orderTime为100秒左右
