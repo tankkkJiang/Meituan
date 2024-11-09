@@ -709,7 +709,7 @@ class DemoPipeline:
                     print(f"订单{waybill['index']}, 外卖送达 - car_sn:{car_sn},drone_sn:{drone_sn}:外卖送{bill_state}啦！！！！！cargo-time用时:{cargo_time}")
                     delivery_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
                     print(f"订单{waybill['index']}, 货物送达时间戳: {delivery_time_ms} 毫秒时间戳")
-                    waiting_time_1 = round(4 * (Moving_car_cycle + 1) - cargo_time, 1)
+                    waiting_time_1 = round(5 * (Moving_car_cycle + 1) - cargo_time, 1)
                     rospy.sleep(waiting_time_1)
                     waiting_time_2 = waiting_time_1
                     rospy.sleep(waiting_time_2)
