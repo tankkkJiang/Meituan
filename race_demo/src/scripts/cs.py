@@ -34,9 +34,9 @@ import pymtmap
 
 # demo定义的状态流转
 
-Moving_car_cycle = 32
-Preparation_Cycle = 20
-move_car_time = 12
+Moving_car_cycle = 29   # 总操作
+Preparation_Cycle = 20  # 包括换机、换电等操作
+move_car_time = 9       # loading_pos前一台车移动所需时间
 
 class WorkState(Enum):
     START = 1
@@ -615,9 +615,9 @@ class DemoPipeline:
                 print(f"订单{waybill['index']}, car_sn:{car_sn}:等待前一单无人机降落...")
                 self.drone_landing_semaphore.acquire()  # 阻塞，直到降落信号量被释放(-1)
 
-                # 移车估计用时15s
+                # 移车估计用时12s，loading_pos前一辆预计9s
                 MOVE_CAR_TO_LEAVING_POINT_time = (rospy.Time.now() - dispatching_start_time).to_sec()
-                print(f"car_sn:{car_sn}:前一单无人机已起飞，前前单无人机已降落，从订单开始到移车开始:{MOVE_CAR_TO_LEAVING_POINT_time}秒(观察指标),可能需要等待(准备周期)")
+                print(f"car_sn:{car_sn}:前一单无人机已起飞，前前单无人机已降落，从订单开始到移车开始:{MOVE_CAR_TO_LEAVING_POINT_time}秒(观察指标),可能需要等待(准备周期20s)")
                 if MOVE_CAR_TO_LEAVING_POINT_time < Preparation_Cycle:
                     rospy.sleep(Preparation_Cycle-MOVE_CAR_TO_LEAVING_POINT_time)
                 else:
@@ -639,6 +639,9 @@ class DemoPipeline:
                         (car for car in self.car_physical_status if car.sn == car_sn), None)
                     drone_physical_status = next(
                         (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
+                print(f"订单{waybill['index']},载无人机起飞的小车离开装货点, 等待{move_car_time}秒下一台车到达装货点开启下一单")
+                self.order_semaphore.release()  # 释放信号量，允许下一单开始
+
 
                 while not self.des_pos_reached(car_physical_status.pos.position, takeoff_pos, 0.5):
                     # print(f"car_sn:{car_sn}小车正在移动中...当前坐标:{car_physical_status.pos.position}")
@@ -647,9 +650,6 @@ class DemoPipeline:
                         (car for car in self.car_physical_status if car.sn == car_sn), None)
                     drone_physical_status = next(
                         (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
-                print(f"订单{waybill['index']},载无人机起飞的小车离开装货点, 开启下一单")
-                self.order_semaphore.release()  # 释放信号量，允许下一单开始
-
                     
                 MOVE_CAR_TO_LEAVING_POINT_time = (rospy.Time.now() - MOVE_CAR_TO_LEAVING_POINT_start).to_sec()
                 print(f"订单{waybill['index']},载无人机起飞的小车到达起飞点, 该小车移动时间(开始运动到运动结束)为{MOVE_CAR_TO_LEAVING_POINT_time}")
