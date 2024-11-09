@@ -912,7 +912,7 @@ class DemoPipeline:
                         try:
                             # 提前查看下一个订单
                             next_waybill = next(it_copy)
-                            print(f"提前查看下一个订单的信息：{next_waybill['index']}")
+                            # print(f"提前查看下一个订单的信息：{next_waybill['index']}")
                         except StopIteration:
                             # 如果没有下一个订单
                             print("当前子订单组中没有更多的订单可供查看")
