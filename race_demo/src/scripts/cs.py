@@ -185,9 +185,9 @@ class DemoPipeline:
                 rospy.sleep(1)
                 break
 
-            # 如果小车在2秒内没有离开出发点，则重新发送移动命令
+            # 如果小车在1秒内没有离开出发点，则重新发送移动命令
             elapsed_time = (rospy.Time.now() - start_time).to_sec()
-            if elapsed_time > 2 and self.des_pos_reached(car_pos, start, 0.5):
+            if elapsed_time > 1 and self.des_pos_reached(car_pos, start, 0.5):
                 # print(f"{car_sn}未在2秒内离开出发点，重新发送移动命令")
                 self.cmd_pub.publish(msg)
                 start_time = rospy.Time.now()  # 重置开始时间
@@ -863,7 +863,7 @@ class DemoPipeline:
             Position(181,434,-16),
             Position(183,439,-16),
             Position(199,435,-16),
-            Position(195,425,-16),
+            Position(195.5,426,-16),
             loading_pos]
         # 小车位置信息
         car_info = [
