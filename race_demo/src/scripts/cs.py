@@ -36,7 +36,7 @@ import pymtmap
 
 Moving_car_cycle = 27
 Preparation_Cycle = 20
-move_car_time = 7
+move_car_time = 12
 
 class WorkState(Enum):
     START = 1
@@ -356,7 +356,9 @@ class DemoPipeline:
         
         elif car_sn == "SIM-MAGV-0004":
             print("移动4号车")
+            middle = Position(197, 431, -16)
             msg.car_route_info.way_point.append(start)
+            msg.car_route_info.way_point.append(middle)
             msg.car_route_info.way_point.append(end)
 
         msg.car_route_info.yaw = 0.0
@@ -835,16 +837,16 @@ class DemoPipeline:
             self.loading_cargo_point['z']
         )
         # 起飞点
-        takeoff_pos = Position(186,431,-16)
+        takeoff_pos = Position(187,431,-16)
         # 降落点
-        landing_pos = Position(183,438,-16)
+        landing_pos = Position(182,435,-16)
         # 定义循环路径点
         points = [
-            Position(186,431,-16),
-            Position(183,438,-16),
+            Position(187,431,-16),
+            Position(182,435,-16),
             Position(190,440,-16),
-            Position(198,437,-16),
-            Position(196,431,-16),
+            Position(199,434,-16),
+            Position(195,431,-16),
             loading_pos]
         # 小车位置信息
         car_info = [
