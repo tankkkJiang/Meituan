@@ -34,9 +34,9 @@ import pymtmap
 
 # demo定义的状态流转
 
-Moving_car_cycle = 30
-Preparation_Cycle = 20
-move_car_time = 10
+Moving_car_cycle = 31
+Preparation_Cycle = 16.5
+move_car_time = 14.5
 
 class WorkState(Enum):
     START = 1
@@ -179,8 +179,8 @@ class DemoPipeline:
 
             car_pos = car_physical_status.pos.position
 
-            # 检查小车是否已经出发
-            if self.des_pos_reached(car_pos, start, 1):
+            # 检查小车是否已经到达目的地
+            if self.des_pos_reached(car_pos, end, 1):
                 # print(f"{car_sn}到达目的地，结束调用")
                 break
 
@@ -321,11 +321,9 @@ class DemoPipeline:
         # 最外侧的两个绕路
         elif car_sn == "SIM-MAGV-0002":
             print("移动2号车")
-            middle_1 = Position(183, 435, -16)
-            middle_2 = Position(185, 431, -16)
+            middle = Position(183, 438, -16)
             msg.car_route_info.way_point.append(start)
-            msg.car_route_info.way_point.append(middle_1)
-            msg.car_route_info.way_point.append(middle_2)
+            msg.car_route_info.way_point.append(middle)
             msg.car_route_info.way_point.append(end)
 
         elif car_sn == "SIM-MAGV-0005":
@@ -338,7 +336,8 @@ class DemoPipeline:
         # 中间的两边也要绕一下
         elif car_sn == "SIM-MAGV-0003":
             print("移动3号车")
-            middle = Position(189, 447, -16)
+            middle_1 = Position(189, 446, -16)
+            middle_2 = Position(189, 438, -16)
             msg.car_route_info.way_point.append(start)
             msg.car_route_info.way_point.append(middle_1)
             msg.car_route_info.way_point.append(middle_2)
@@ -355,7 +354,6 @@ class DemoPipeline:
         
         elif car_sn == "SIM-MAGV-0004":
             print("移动4号车")
-            midlle = Position(197, 431, -16)
             msg.car_route_info.way_point.append(start)
             msg.car_route_info.way_point.append(end)
 
@@ -630,7 +628,7 @@ class DemoPipeline:
                     drone_physical_status = next(
                         (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                 MOVE_CAR_TO_LEAVING_POINT_time = (rospy.Time.now() - MOVE_CAR_TO_LEAVING_POINT_start).to_sec()
-                print(f"订单{waybill['index']},小车移动完毕, 起飞的小车移动时间(开始运动到运动结束)为{MOVE_CAR_TO_LEAVING_POINT_time}")
+                print(f"订单{waybill['index']},小车移动完毕, 小车移动时间(开始运动到运动结束)为{MOVE_CAR_TO_LEAVING_POINT_time}")
 
                 start_to_move_finish_time = (rospy.Time.now() - dispatching_start_time).to_sec()
                 print(f"订单{waybill['index']},car_sn:{car_sn},drone_sn:{drone_sn}:从订单开始到移车结束: {start_to_move_finish_time}")
@@ -829,16 +827,16 @@ class DemoPipeline:
             self.loading_cargo_point['z']
         )
         # 起飞点
-        takeoff_pos = Position(187,431,-16)
+        takeoff_pos = Position(185,431,-16)
         # 降落点
-        landing_pos = Position(182,433,-16)
+        landing_pos = Position(183,438,-16)
         # 定义循环路径点
         points = [
-            Position(187,431,-16),
-            Position(182,433,-16),
-            Position(193,438,-16),
-            Position(199,433,-16),
-            Position(194,431,-16),
+            Position(185,431,-16),
+            Position(183,438,-16),
+            Position(190,438,-16),
+            Position(198,437,-16),
+            Position(196,431,-16),
             loading_pos]
         # 小车位置信息
         car_info = [
