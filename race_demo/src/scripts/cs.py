@@ -34,7 +34,7 @@ import pymtmap
 
 # demo定义的状态流转
 
-Moving_car_cycle = 27
+Moving_car_cycle = 32
 Preparation_Cycle = 20
 move_car_time = 12
 
@@ -837,16 +837,16 @@ class DemoPipeline:
             self.loading_cargo_point['z']
         )
         # 起飞点
-        takeoff_pos = Position(187,431,-16)
+        takeoff_pos = Position(186,431,-16)
         # 降落点
-        landing_pos = Position(182,435,-16)
+        landing_pos = Position(183,438,-16)
         # 定义循环路径点
         points = [
-            Position(187,431,-16),
-            Position(182,435,-16),
+            Position(186,431,-16),
+            Position(183,438,-16),
             Position(190,440,-16),
-            Position(199,434,-16),
-            Position(195,431,-16),
+            Position(198,437,-16),
+            Position(196,431,-16),
             loading_pos]
         # 小车位置信息
         car_info = [
