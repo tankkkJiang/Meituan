@@ -348,7 +348,7 @@ class DemoPipeline:
         elif car_sn == "SIM-MAGV-0006":
             print("移动6号车")
             middle_1 = Position(193, 446, -16)
-            middle_2 = Position(193, 438, -16)
+            middle_2 = Position(193, 439, -16)
             msg.car_route_info.way_point.append(start)
             msg.car_route_info.way_point.append(middle_1)
             msg.car_route_info.way_point.append(middle_2)
@@ -842,11 +842,11 @@ class DemoPipeline:
         landing_pos = Position(183,438,-16)
         # 定义循环路径点
         points = [
-            Position(186,431,-16),
-            Position(183,438,-16),
-            Position(190,440,-16),
-            Position(198,437,-16),
-            Position(196,431,-16),
+            Position(188,431,-16),
+            Position(182,432,-16),
+            Position(193,439,-16),
+            Position(199,431,-16),
+            Position(192,431,-16),
             loading_pos]
         # 小车位置信息
         car_info = [
