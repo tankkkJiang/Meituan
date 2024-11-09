@@ -639,7 +639,8 @@ class DemoPipeline:
                         (car for car in self.car_physical_status if car.sn == car_sn), None)
                     drone_physical_status = next(
                         (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
-                print(f"订单{waybill['index']},载无人机起飞的小车离开装货点, 等待{move_car_time}秒下一台车到达装货点开启下一单")
+                print(f"订单{waybill['index']},载无人机起飞的小车离开装货点, 等待{move_car_time}秒保证下一台车到达装货点开启下一单")
+                rospy.sleep(move_car_time)
                 self.order_semaphore.release()  # 释放信号量，允许下一单开始
 
 
@@ -656,11 +657,6 @@ class DemoPipeline:
 
                 start_to_move_finish_time = (rospy.Time.now() - dispatching_start_time).to_sec()
                 print(f"订单{waybill['index']},car_sn:{car_sn},drone_sn:{drone_sn}:从订单开始到移车结束: {start_to_move_finish_time}秒(观察指标)")
-                if start_to_move_finish_time < Moving_car_cycle:
-                    rospy.sleep(Moving_car_cycle-start_to_move_finish_time)
-                    print(f"订单{waybill['index']},car_sn:{car_sn},drone_sn:{drone_sn}: 等待{Moving_car_cycle-start_to_move_finish_time}秒才释放下一单的开始/空单重复, 保证一个周期{Moving_car_cycle}s")
-                else:
-                    print(f"订单{waybill['index']},car_sn:{car_sn}: 准备时间和移车时间超时，大于一个周期，可能需要调整")
 
                 if is_empty_car:
                     # 空车情况
@@ -731,7 +727,7 @@ class DemoPipeline:
                     print(f"订单{waybill['index']}, 外卖送达 - car_sn:{car_sn},drone_sn:{drone_sn}:外卖送{bill_state}啦！！！！！cargo-time用时:{cargo_time}")
                     delivery_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
                     print(f"订单{waybill['index']}, 货物送达时间戳: {delivery_time_ms} 毫秒时间戳")
-                    waiting_time_1 = round(5 * (Preparation_Cycle + 1) - cargo_time, 1)
+                    waiting_time_1 = round(6 * (Preparation_Cycle) - cargo_time, 1)
                     rospy.sleep(waiting_time_1)
                     waiting_time_2 = waiting_time_1
                     rospy.sleep(waiting_time_2)
@@ -754,7 +750,7 @@ class DemoPipeline:
                     route = route[1:-1][::-1]  # 使用切片翻转列表
                     route = [Position(point.x, point.y, flying_height-18) for point in route]
                     end_pos_1 = Position(landing_pos.x, landing_pos.y, flying_height-18)
-                    end_pos_2 = Position(landing_pos.x, landing_pos.y, landing_pos.z-4)
+                    end_pos_2 = Position(landing_pos.x, landing_pos.y, landing_pos.z-5)
                     route = route + [end_pos_1,end_pos_2]
                     # 飞到降落点上空，等待降落
                     rospy.sleep(0.1)
@@ -940,7 +936,7 @@ class DemoPipeline:
                             )
                             threads.append(thread)
                             thread.start()
-                            rospy.sleep(Moving_car_cycle+1)     # 每多少秒周期提取并处理一单订单
+                            rospy.sleep(Preparation_Cycle)     # 每多少秒周期提取并处理一单订单
                         break  # 成功处理完一个订单后，退出内部循环
                     except StopIteration:
                         # 如果迭代器已经耗尽，从列表中移除
