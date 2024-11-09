@@ -895,6 +895,11 @@ class DemoPipeline:
         # 确保在循环开始前子列表已经按照betterTime+timeout排序
         groups = self.waybill_classification()
         iterators = [iter(group) for group in groups]
+        # 将每个子订单组转换为列表
+        order_lists = [list(it) for it in iterators]
+        # 为每个订单组创建独立的队列
+        waybill_queues = {index: deque(order_list) for index, order_list in enumerate(order_lists)}
+
         # # 循环提取每个子列表的一个元素，直到所有子列表都为空
         flying_height_list = [-86, -92, -98]
         flying_height_iterator = itertools.cycle(flying_height_list)
@@ -905,31 +910,28 @@ class DemoPipeline:
             # 创建每个子订单组的进程
             threads = []
             # 每个迭代器对应一个已经排序的子列表
-
-            # 为每个迭代器创建独立的队列来存储订单
-            waybill_queues = {id(it): deque() for it in iterators}
-            for group_index, it in enumerate(iterators[:]):
-                queue = waybill_queues[id(it)]  # 获取当前迭代器对应的队列
-                while True:  # 在每个迭代器中使用 while 循环
+            for group_index, queue in waybill_queues.items():
+                while True:
                     try:
                         print("********************")
-                        print(f"当前处理分组号: {group_index}; 当前队列长度: {len(queue)}")
+                        print(f"当前处理分组号: {group_index}")
+
                         # 获取当前订单，优先从队列中取出
                         if len(queue) > 0:
-                            print("队列中有足够的订单可供处理")
+                            print(f"队列中有足够的订单可供处理，当前队列长度: {len(queue)}")
                             waybill = queue.popleft()
                         else:
-                            # 如果队列为空，则从迭代器中提取一个订单
-                            waybill = next(it)
+                            # 如果队列为空，说明所有订单都已处理完毕
+                            print("当前子订单组中没有更多的订单可供处理")
+                            break
 
                         print(f"当前订单{waybill['index']}")
 
-                        # 尝试从当前迭代器中预取下一个订单并缓存到队列中
-                        try:
-                            next_waybill = next(it)
-                            queue.append(next_waybill)
-                            print(f"提前查看下一个订单的信息：{next_waybill['index']}已加入队列，当前队列长度: {len(queue)}")
-                        except StopIteration:
+                        # 尝试提前查看并缓存下一个订单
+                        if len(queue) > 0:
+                            next_waybill = queue[0]  # 查看下一个订单但不从队列中移除
+                            print(f"提前查看下一个订单的信息：{next_waybill['index']}")
+                        else:
                             print("当前子订单组中没有更多的订单可供查看")
     
                         # 尝试从当前迭代器中提取一个订单
@@ -967,9 +969,9 @@ class DemoPipeline:
                             thread.start()
                             rospy.sleep(Moving_car_Cycle)     # 每多少秒周期提取并处理一单订单
                         break  # 成功处理完一个订单后，退出内部循环
-                    except StopIteration:
-                        # 如果迭代器已经耗尽，从列表中移除
-                        iterators.remove(it)
+                    except IndexError:
+                        # 如果队列已经为空，跳出循环
+                        print(f"分组 {group_index} 的订单队列已耗尽")
                         break
             # rospy.sleep(35.3)
             # # 等待所有线程完成
