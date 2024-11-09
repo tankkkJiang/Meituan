@@ -910,11 +910,12 @@ class DemoPipeline:
 
             # 为每个迭代器创建独立的队列来存储订单
             waybill_queues = {id(it): deque() for it in iterators}
-            for it in iterators[:]:
+            for group_index, it in enumerate(iterators[:]):
                 queue = waybill_queues[id(it)]  # 获取当前迭代器对应的队列
                 while True:  # 在每个迭代器中使用 while 循环
                     try:
                         print("********************")
+                        print(f"当前处理分组号: {group_index}")
                         # 检查队列是否为空，如果为空则从迭代器中提取一个订单
                         if not queue:
                             waybill = next(it)
