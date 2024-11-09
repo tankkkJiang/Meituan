@@ -34,7 +34,7 @@ import pymtmap
 
 # demo定义的状态流转
 
-Moving_car_cycle = 29   # 总操作
+Moving_car_Cycle = 29   # 总操作
 Preparation_Cycle = 20  # 包括换机、换电等操作
 move_car_time = 9       # loading_pos前一台车移动所需时间
 
@@ -727,7 +727,7 @@ class DemoPipeline:
                     print(f"订单{waybill['index']}, 外卖送达 - car_sn:{car_sn},drone_sn:{drone_sn}:外卖送{bill_state}啦！！！！！cargo-time用时:{cargo_time}")
                     delivery_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
                     print(f"订单{waybill['index']}, 货物送达时间戳: {delivery_time_ms} 毫秒时间戳")
-                    waiting_time_1 = round(6 * (Preparation_Cycle) - cargo_time, 1)
+                    waiting_time_1 = round(5 * (Moving_car_Cycle) - cargo_time, 1)
                     rospy.sleep(waiting_time_1)
                     waiting_time_2 = waiting_time_1
                     rospy.sleep(waiting_time_2)
@@ -936,7 +936,7 @@ class DemoPipeline:
                             )
                             threads.append(thread)
                             thread.start()
-                            rospy.sleep(Preparation_Cycle)     # 每多少秒周期提取并处理一单订单
+                            rospy.sleep(Moving_car_Cycle)     # 每多少秒周期提取并处理一单订单
                         break  # 成功处理完一个订单后，退出内部循环
                     except StopIteration:
                         # 如果迭代器已经耗尽，从列表中移除
