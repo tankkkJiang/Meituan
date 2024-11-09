@@ -844,11 +844,11 @@ class DemoPipeline:
         landing_pos = Position(183,438,-16)
         # 定义循环路径点
         points = [
-            Position(188,431,-16),
+            Position(187,431,-16),
             Position(182,432,-16),
             Position(193,439,-16),
             Position(199,431,-16),
-            Position(192,431,-16),
+            Position(193,431,-16),
             loading_pos]
         # 小车位置信息
         car_info = [
