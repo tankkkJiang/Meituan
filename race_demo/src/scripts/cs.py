@@ -916,16 +916,16 @@ class DemoPipeline:
                     try:
                         print("********************")
                         print(f"当前处理分组号: {group_index}")
-                        # 检查队列是否为空，如果为空则从迭代器中提取一个订单
-                        if not queue:
+                        # 获取当前订单，优先从队列中取出
+                        if queue:
+                            waybill = queue.popleft()
+                        else:
+                            # 如果队列为空，则从迭代器中提取一个订单
                             waybill = next(it)
-                            queue.append(waybill)
 
-                        # 获取当前订单
-                        waybill = queue.popleft()
                         print(f"当前订单{waybill['index']}")
 
-                        # 尝试从当前迭代器中预取下一个订单并缓存
+                        # 尝试从当前迭代器中预取下一个订单并缓存到队列中
                         try:
                             next_waybill = next(it)
                             queue.append(next_waybill)
