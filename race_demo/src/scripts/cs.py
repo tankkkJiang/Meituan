@@ -848,7 +848,7 @@ class DemoPipeline:
             Position(181,434,-16),
             Position(190,440,-16),
             Position(199,434,-16),
-            Position(195,430,-16),
+            Position(195,429,-16),
             loading_pos]
         # 小车位置信息
         car_info = [
