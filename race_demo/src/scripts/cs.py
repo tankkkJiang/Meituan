@@ -180,8 +180,8 @@ class DemoPipeline:
             car_pos = car_physical_status.pos.position
 
             # 检查小车是否已经确定离开出发点
-            if self.des_pos_reached(car_pos, start, 1):
-                # print(f"{car_sn}到达目的地，结束调用")
+            if not self.des_pos_reached(car_pos, start, 1):
+                rospy.sleep(1)
                 break
 
             # 如果小车在2秒内没有离开出发点，则重新发送移动命令
