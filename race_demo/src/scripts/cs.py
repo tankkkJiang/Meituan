@@ -736,7 +736,7 @@ class DemoPipeline:
                     route = route[1:-1][::-1]  # 使用切片翻转列表
                     route = [Position(point.x, point.y, flying_height-18) for point in route]
                     end_pos_1 = Position(landing_pos.x, landing_pos.y, flying_height-18)
-                    end_pos_2 = Position(landing_pos.x, landing_pos.y, landing_pos.z-5)
+                    end_pos_2 = Position(landing_pos.x, landing_pos.y, landing_pos.z-4)
                     route = route + [end_pos_1,end_pos_2]
                     # 飞到降落点上空，等待降落
                     rospy.sleep(0.1)
