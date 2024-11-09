@@ -627,6 +627,18 @@ class DemoPipeline:
                 MOVE_CAR_TO_LEAVING_POINT_start = rospy.Time.now()
                 # 小车搭载挂外卖的无人机到达起飞点
                 self.move_car_to_target_pos(car_list)
+                car_physical_status = next(
+                        (car for car in self.car_physical_status if car.sn == car_sn), None)
+                drone_physical_status = next(
+                        (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
+                
+                while self.des_pos_reached(car_physical_status.pos.position, loading_pos, 0.5):
+                    # print(f"car_sn:{car_sn}小车正在移动中...当前坐标:{car_physical_status.pos.position}")
+                    rospy.sleep(0.5)  # 每隔时间检查一次位置
+                    car_physical_status = next(
+                        (car for car in self.car_physical_status if car.sn == car_sn), None)
+                    drone_physical_status = next(
+                        (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
 
                 while not self.des_pos_reached(car_physical_status.pos.position, takeoff_pos, 0.5):
                     # print(f"car_sn:{car_sn}小车正在移动中...当前坐标:{car_physical_status.pos.position}")
@@ -635,10 +647,12 @@ class DemoPipeline:
                         (car for car in self.car_physical_status if car.sn == car_sn), None)
                     drone_physical_status = next(
                         (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
+                print(f"订单{waybill['index']},载无人机起飞的小车离开装货点, 开启下一单")
+                self.order_semaphore.release()  # 释放信号量，允许下一单开始
 
                     
                 MOVE_CAR_TO_LEAVING_POINT_time = (rospy.Time.now() - MOVE_CAR_TO_LEAVING_POINT_start).to_sec()
-                print(f"订单{waybill['index']},载无人机起飞的小车移动完毕, 该小车移动时间(开始运动到运动结束)为{MOVE_CAR_TO_LEAVING_POINT_time}")
+                print(f"订单{waybill['index']},载无人机起飞的小车到达起飞点, 该小车移动时间(开始运动到运动结束)为{MOVE_CAR_TO_LEAVING_POINT_time}")
 
                 start_to_move_finish_time = (rospy.Time.now() - dispatching_start_time).to_sec()
                 print(f"订单{waybill['index']},car_sn:{car_sn},drone_sn:{drone_sn}:从订单开始到移车结束: {start_to_move_finish_time}秒(观察指标)")
@@ -656,10 +670,8 @@ class DemoPipeline:
                     self.drone_takeoff_semaphore.release() # 释放起飞信号量(+1)
                     self.drone_landing_semaphore.release() # 释放降落信号量，以便下一个无人机可以继续降落(+1)
                     # 未到/超时情况，放弃处理，否则连锁反应
-                    self.order_semaphore.release()  # 释放信号量，允许下一单开始
                     break
                 else:
-                    self.order_semaphore.release()         # 释放信号量，允许下一单开始，可以实现几秒处理一单
                     self.drone_landing_semaphore.release() # 释放降落信号量，以便下一个小车可以继续降落(+1)
                     state = WorkState.RELEASE_DRONE_OUT
             elif state == WorkState.RELEASE_DRONE_OUT:
@@ -848,7 +860,7 @@ class DemoPipeline:
             Position(181,434,-16),
             Position(190,440,-16),
             Position(199,434,-16),
-            Position(195,429,-16),
+            Position(194,425,-16),
             loading_pos]
         # 小车位置信息
         car_info = [
