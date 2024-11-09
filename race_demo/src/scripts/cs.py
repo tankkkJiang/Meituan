@@ -321,9 +321,11 @@ class DemoPipeline:
         # 最外侧的两个绕路
         elif car_sn == "SIM-MAGV-0002":
             print("移动2号车")
-            middle = Position(183, 438, -16)
+            middle_1 = Position(183, 438, -16)
+            middle_2 = Position(183, 431, -16)
             msg.car_route_info.way_point.append(start)
-            msg.car_route_info.way_point.append(middle)
+            msg.car_route_info.way_point.append(middle_1)
+            msg.car_route_info.way_point.append(middle_2)
             msg.car_route_info.way_point.append(end)
 
         elif car_sn == "SIM-MAGV-0005":
