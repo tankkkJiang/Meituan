@@ -630,7 +630,7 @@ class DemoPipeline:
                     drone_physical_status = next(
                         (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                 MOVE_CAR_TO_LEAVING_POINT_time = (rospy.Time.now() - MOVE_CAR_TO_LEAVING_POINT_start).to_sec()
-                print(f"订单{waybill['index']},小车移动完毕, 小车移动时间(开始运动到运动结束)为{MOVE_CAR_TO_LEAVING_POINT_time}")
+                print(f"订单{waybill['index']},小车移动完毕, 起飞的小车移动时间(开始运动到运动结束)为{MOVE_CAR_TO_LEAVING_POINT_time}")
 
                 start_to_move_finish_time = (rospy.Time.now() - dispatching_start_time).to_sec()
                 print(f"订单{waybill['index']},car_sn:{car_sn},drone_sn:{drone_sn}:从订单开始到移车结束: {start_to_move_finish_time}")
