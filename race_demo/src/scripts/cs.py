@@ -908,25 +908,26 @@ class DemoPipeline:
             threads = []
             # 每个迭代器对应一个已经排序的子列表
 
-            # 初始化一个双端队列用于存储订单
-            waybill_queue = deque()
+            # 为每个迭代器创建独立的队列来存储订单
+            waybill_queues = {id(it): deque() for it in iterators}
             for it in iterators[:]:
+                queue = waybill_queues[id(it)]  # 获取当前迭代器对应的队列
                 while True:  # 在每个迭代器中使用 while 循环
                     try:
                         print("********************")
                         # 检查队列是否为空，如果为空则从迭代器中提取一个订单
-                        if not waybill_queue:
+                        if not queue:
                             waybill = next(it)
-                            waybill_queue.append(waybill)
+                            queue.append(waybill)
 
                         # 获取当前订单
-                        waybill = waybill_queue.popleft()
+                        waybill = queue.popleft()
                         print(f"当前订单{waybill['index']}")
 
                         # 尝试从当前迭代器中预取下一个订单并缓存
                         try:
                             next_waybill = next(it)
-                            waybill_queue.append(next_waybill)
+                            queue.append(next_waybill)
                             print(f"提前查看下一个订单的信息：{next_waybill['index']}")
                         except StopIteration:
                             print("当前子订单组中没有更多的订单可供查看")
