@@ -34,9 +34,9 @@ import pymtmap
 
 # demo定义的状态流转
 
-Moving_car_cycle = 32
-Preparation_Cycle = 20
-move_car_time = 12
+Moving_car_cycle = 31
+Preparation_Cycle = 16.5
+move_car_time = 14.5
 
 class WorkState(Enum):
     START = 1
@@ -179,8 +179,8 @@ class DemoPipeline:
 
             car_pos = car_physical_status.pos.position
 
-            # 检查小车是否已经确定离开出发点
-            if self.des_pos_reached(car_pos, start, 1):
+            # 检查小车是否已经到达目的地
+            if self.des_pos_reached(car_pos, end, 1):
                 # print(f"{car_sn}到达目的地，结束调用")
                 break
 
@@ -630,7 +630,7 @@ class DemoPipeline:
                     drone_physical_status = next(
                         (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                 MOVE_CAR_TO_LEAVING_POINT_time = (rospy.Time.now() - MOVE_CAR_TO_LEAVING_POINT_start).to_sec()
-                print(f"订单{waybill['index']},载无人机起飞的小车移动完毕, 该小车移动时间(开始运动到运动结束)为{MOVE_CAR_TO_LEAVING_POINT_time}")
+                print(f"订单{waybill['index']},小车移动完毕, 小车移动时间(开始运动到运动结束)为{MOVE_CAR_TO_LEAVING_POINT_time}")
 
                 start_to_move_finish_time = (rospy.Time.now() - dispatching_start_time).to_sec()
                 print(f"订单{waybill['index']},car_sn:{car_sn},drone_sn:{drone_sn}:从订单开始到移车结束: {start_to_move_finish_time}")
@@ -836,7 +836,7 @@ class DemoPipeline:
         points = [
             Position(185,431,-16),
             Position(183,438,-16),
-            Position(190,440,-16),
+            Position(190,438,-16),
             Position(198,437,-16),
             Position(196,431,-16),
             loading_pos]
