@@ -331,11 +331,9 @@ class DemoPipeline:
 
         elif car_sn == "SIM-MAGV-0005":
             print("移动5号车")
-            middle_1 = Position(190, 438, -16)
-            middle_2 = Position(183, 438, -16)
+            middle = Position(190, 438, -16)
             msg.car_route_info.way_point.append(start)
-            msg.car_route_info.way_point.append(middle_1)
-            msg.car_route_info.way_point.append(middle_2)
+            msg.car_route_info.way_point.append(middle)
             msg.car_route_info.way_point.append(end)
 
         # 中间的两边也要绕一下
@@ -860,8 +858,8 @@ class DemoPipeline:
         # 定义循环路径点
         points = [
             Position(186,431,-16),
-            Position(182,435,-16),
-            Position(187,439,-16),
+            Position(184,437,-16),
+            Position(190,440,-16),
             Position(199,435,-16),
             Position(195.5,426,-16),
             loading_pos]
@@ -915,7 +913,7 @@ class DemoPipeline:
                 while True:  # 在每个迭代器中使用 while 循环
                     try:
                         print("********************")
-                        print(f"当前处理分组号: {group_index}")
+                        print(f"当前处理分组号: {group_index}; 当前队列长度: {len(queue)}")
                         # 获取当前订单，优先从队列中取出
                         if len(queue) > 0:
                             print("队列中有足够的订单可供处理")
@@ -930,7 +928,7 @@ class DemoPipeline:
                         try:
                             next_waybill = next(it)
                             queue.append(next_waybill)
-                            print(f"提前查看下一个订单的信息：{next_waybill['index']}")
+                            print(f"提前查看下一个订单的信息：{next_waybill['index']}已加入队列，当前队列长度: {len(queue)}")
                         except StopIteration:
                             print("当前子订单组中没有更多的订单可供查看")
     
