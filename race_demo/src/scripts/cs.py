@@ -846,9 +846,9 @@ class DemoPipeline:
         points = [
             Position(187,431,-16),
             Position(181,434,-16),
-            Position(193,440,-16),
-            Position(199,431,-16),
-            Position(193,431,-16),
+            Position(190,440,-16),
+            Position(199,434,-16),
+            Position(195,430,-16),
             loading_pos]
         # 小车位置信息
         car_info = [
