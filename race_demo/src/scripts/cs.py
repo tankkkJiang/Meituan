@@ -918,7 +918,7 @@ class DemoPipeline:
                         try:
                             # 提前查看下一个订单
                             next_waybill = next(it_copy)
-                            # print(f"提前查看下一个订单的信息：{next_waybill['index']}")
+                            print(f"当前订单{waybill['index']}提前查看下一个订单的信息：{next_waybill['index']}")
                         except StopIteration:
                             # 如果没有下一个订单
                             print("当前子订单组中没有更多的订单可供查看")
@@ -935,7 +935,7 @@ class DemoPipeline:
                         bind_cargo_attempts = 0  # 用于跟踪绑定货物的尝试次数
 
                         select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
-                        if self.waybill_count_start > 1 and (select_start_time_ms > (next_waybill['orderTime'])) and ((select_start_time_ms + 15000 > (waybill['timeout'])) or (select_start_time_ms + 110000 > (waybill['betterTime']))):
+                        if self.waybill_count_start > 1 and (select_start_time_ms > (next_waybill['orderTime'])) and ((select_start_time_ms + 15000 > (waybill['timeout'])) or (select_start_time_ms + 120000 > (waybill['betterTime']))):
                             # 丢弃这一单，直接开始下一单
                             # 不同组的单间隔orderTime为120-150秒左右
                             self.giveup_waybill += 1
@@ -944,6 +944,7 @@ class DemoPipeline:
                             print(f"订单时间 orderTime: {waybill['orderTime']} - 毫秒戳")
                             print(f"最佳送达时间 betterTime: {waybill['betterTime']} - 毫秒戳")
                             print(f"超时时间 timeout: {waybill['timeout']} - 毫秒戳")
+                            print(f"下一单{next_waybill['index']}: orderTime: {next_waybill['orderTime']}")
                             # rospy.sleep(1)
                             continue
                         else:
