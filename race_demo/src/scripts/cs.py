@@ -854,14 +854,14 @@ class DemoPipeline:
             self.loading_cargo_point['z']
         )
         # 起飞点
-        takeoff_pos = Position(187,431,-16)
+        takeoff_pos = Position(186,431,-16)
         # 降落点
-        landing_pos = Position(181,434,-16)
+        landing_pos = Position(182,435,-16)
         # 定义循环路径点
         points = [
-            Position(187,431,-16),
-            Position(181,434,-16),
-            Position(183,439,-16),
+            Position(186,431,-16),
+            Position(182,435,-16),
+            Position(187,439,-16),
             Position(199,435,-16),
             Position(195.5,426,-16),
             loading_pos]
@@ -917,7 +917,8 @@ class DemoPipeline:
                         print("********************")
                         print(f"当前处理分组号: {group_index}")
                         # 获取当前订单，优先从队列中取出
-                        if queue:
+                        if len(queue) > 0:
+                            print("队列中有足够的订单可供处理")
                             waybill = queue.popleft()
                         else:
                             # 如果队列为空，则从迭代器中提取一个订单
