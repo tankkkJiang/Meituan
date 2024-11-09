@@ -34,9 +34,9 @@ import pymtmap
 
 # demo定义的状态流转
 
-Moving_car_cycle = 31
-Preparation_Cycle = 16.5
-move_car_time = 14.5
+Moving_car_cycle = 30
+Preparation_Cycle = 20
+move_car_time = 10
 
 class WorkState(Enum):
     START = 1
