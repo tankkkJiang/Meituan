@@ -906,25 +906,31 @@ class DemoPipeline:
             # 创建每个子订单组的进程
             threads = []
             # 每个迭代器对应一个已经排序的子列表
+
+            # 初始化一个双端队列用于存储订单
+            waybill_queue = deque()
             for it in iterators[:]:
                 while True:  # 在每个迭代器中使用 while 循环
                     try:
+                        print("********************")
+                        # 检查队列是否为空，如果为空则从迭代器中提取一个订单
+                        if not waybill_queue:
+                            waybill = next(it)
+                            waybill_queue.append(waybill)
+
                         # 获取当前订单
-                        waybill = next(it)
+                        waybill = waybill_queue.popleft()
+                        print(f"当前订单{waybill['index']}")
 
-                        # 创建迭代器副本以提前查看下一个订单
-                        it_copy, it = itertools.tee(it)
-
+                        # 尝试从当前迭代器中预取下一个订单并缓存
                         try:
-                            # 提前查看下一个订单
-                            next_waybill = next(it_copy)
-                            print(f"当前订单{waybill['index']}提前查看下一个订单的信息：{next_waybill['index']}")
+                            next_waybill = next(it)
+                            waybill_queue.append(next_waybill)
+                            print(f"提前查看下一个订单的信息：{next_waybill['index']}")
                         except StopIteration:
-                            # 如果没有下一个订单
                             print("当前子订单组中没有更多的订单可供查看")
     
                         # 尝试从当前迭代器中提取一个订单
-                        print("********************")
                         # waybill = next(it)
                         print("当前时间(秒):", rospy.get_time() - self.running_start_time)
                         print(f"提取订单-waybill如下:{waybill['index']}")
