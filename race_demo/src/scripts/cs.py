@@ -858,7 +858,7 @@ class DemoPipeline:
         points = [
             Position(187,431,-16),
             Position(181,434,-16),
-            Position(190,440,-16),
+            Position(185,439,-16),
             Position(199,434,-16),
             Position(195,425,-16),
             loading_pos]
