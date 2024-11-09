@@ -613,7 +613,7 @@ class DemoPipeline:
 
                 # 移车估计用时15s
                 MOVE_CAR_TO_LEAVING_POINT_time = (rospy.Time.now() - dispatching_start_time).to_sec()
-                print(f"car_sn:{car_sn}:前一单无人机已起飞，前前单无人机已降落，从订单开始到移车开始:{MOVE_CAR_TO_LEAVING_POINT_time}秒,可能需要等待(准备周期)")
+                print(f"car_sn:{car_sn}:前一单无人机已起飞，前前单无人机已降落，从订单开始到移车开始:{MOVE_CAR_TO_LEAVING_POINT_time}秒(观察指标),可能需要等待(准备周期)")
                 if MOVE_CAR_TO_LEAVING_POINT_time < Preparation_Cycle:
                     rospy.sleep(Preparation_Cycle-MOVE_CAR_TO_LEAVING_POINT_time)
 
@@ -633,7 +633,7 @@ class DemoPipeline:
                 print(f"订单{waybill['index']},载无人机起飞的小车移动完毕, 该小车移动时间(开始运动到运动结束)为{MOVE_CAR_TO_LEAVING_POINT_time}")
 
                 start_to_move_finish_time = (rospy.Time.now() - dispatching_start_time).to_sec()
-                print(f"订单{waybill['index']},car_sn:{car_sn},drone_sn:{drone_sn}:从订单开始到移车结束: {start_to_move_finish_time}")
+                print(f"订单{waybill['index']},car_sn:{car_sn},drone_sn:{drone_sn}:从订单开始到移车结束: {start_to_move_finish_time}秒(观察指标)")
                 if start_to_move_finish_time < Moving_car_cycle:
                     rospy.sleep(Moving_car_cycle-start_to_move_finish_time)
                     print(f"订单{waybill['index']},car_sn:{car_sn},drone_sn:{drone_sn}: 等待{Moving_car_cycle-start_to_move_finish_time}秒才释放下一单的开始/空单重复, 保证一个周期{Moving_car_cycle}s")
