@@ -179,8 +179,8 @@ class DemoPipeline:
 
             car_pos = car_physical_status.pos.position
 
-            # 检查小车是否已经到达目的地
-            if self.des_pos_reached(car_pos, end, 1):
+            # 检查小车是否已经出发
+            if self.des_pos_reached(car_pos, start, 1):
                 # print(f"{car_sn}到达目的地，结束调用")
                 break
 
