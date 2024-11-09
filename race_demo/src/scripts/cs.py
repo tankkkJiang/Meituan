@@ -640,7 +640,13 @@ class DemoPipeline:
                     drone_physical_status = next(
                         (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                 print(f"订单{waybill['index']},载无人机起飞的小车离开装货点, 等待{move_car_time}秒保证下一台车到达装货点开启下一单")
-                rospy.sleep(move_car_time)
+                Ready_to_next_waybill_time = (rospy.Time.now() - dispatching_start_time).to_sec()
+                print(f"订单{waybill['index']}, car_sn:{car_sn}: 当前订单到移车开始用时{Ready_to_next_waybill_time}秒(观察指标),可能需要等待(订单周期为{Moving_car_Cycle}s)才可以释放下一单信号量")
+                if Ready_to_next_waybill_time < Moving_car_Cycle:
+                    rospy.sleep(Moving_car_Cycle-Ready_to_next_waybill_time)
+                    print(f"等待时间结束，释放下一单信号量")
+                else:
+                    print(f"订单{waybill['index']}, car_sn:{car_sn}:移车前准备超时, 需要{Ready_to_next_waybill_time}秒，可能需要调整时间")
                 self.order_semaphore.release()  # 释放信号量，允许下一单开始
 
 
@@ -929,7 +935,7 @@ class DemoPipeline:
                         bind_cargo_attempts = 0  # 用于跟踪绑定货物的尝试次数
 
                         select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
-                        if self.waybill_count_start > 1 and (select_start_time_ms > (next_waybill['orderTime'])) and ((select_start_time_ms + 15000 > (waybill['timeout'])) or (select_start_time_ms + 120000 > (waybill['betterTime']))):
+                        if self.waybill_count_start > 1 and (select_start_time_ms > (next_waybill['orderTime'])) and ((select_start_time_ms + 15000 > (waybill['timeout'])) or (select_start_time_ms + 110000 > (waybill['betterTime']))):
                             # 丢弃这一单，直接开始下一单
                             # 不同组的单间隔orderTime为120-150秒左右
                             self.giveup_waybill += 1
