@@ -31,6 +31,7 @@ from race_demo.srv import QueryVoxel, QueryVoxelRequest
 
 from a_star import navigate_with_astar
 import pymtmap
+from collections import deque
 
 # demo定义的状态流转
 
