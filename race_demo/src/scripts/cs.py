@@ -903,9 +903,23 @@ class DemoPipeline:
             for it in iterators[:]:
                 while True:  # 在每个迭代器中使用 while 循环
                     try:
+                        # 获取当前订单
+                        waybill = next(it)
+
+                        # 创建迭代器副本以提前查看下一个订单
+                        it_copy, it = itertools.tee(it)
+
+                        try:
+                            # 提前查看下一个订单
+                            next_waybill = next(it_copy)
+                            print(f"提前查看下一个订单的信息：{next_waybill['index']}")
+                        except StopIteration:
+                            # 如果没有下一个订单
+                            print("当前子订单组中没有更多的订单可供查看")
+    
                         # 尝试从当前迭代器中提取一个订单
                         print("********************")
-                        waybill = next(it)
+                        # waybill = next(it)
                         print("当前时间(秒):", rospy.get_time() - self.running_start_time)
                         print(f"提取订单-waybill如下:{waybill['index']}")
                         # 初始化ros变量
@@ -915,7 +929,7 @@ class DemoPipeline:
                         bind_cargo_attempts = 0  # 用于跟踪绑定货物的尝试次数
 
                         select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
-                        if self.waybill_count_start > 1 and (select_start_time_ms > (waybill['orderTime'] + 120000)) and ((select_start_time_ms + 15000 > (waybill['timeout'])) or (select_start_time_ms + 120000 > ((waybill['timeout'] - waybill['betterTime'])/16)+waybill['betterTime'])):
+                        if self.waybill_count_start > 1 and (select_start_time_ms > (next_waybill['orderTime'])) and ((select_start_time_ms + 15000 > (waybill['timeout'])) or (select_start_time_ms + 120000 > (waybill['betterTime']))):
                             # 丢弃这一单，直接开始下一单
                             # 不同组的单间隔orderTime为120-150秒左右
                             self.giveup_waybill += 1
