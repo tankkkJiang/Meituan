@@ -452,7 +452,7 @@ class DemoPipeline:
         return groups
     
     # 调度小车和无人机完成订单
-    def dispatching(self, car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car, bind_cargo_attempts):       
+    def dispatching(self, car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car, bind_cargo_attempts, is_battery_replacement):       
         flag = True
         waybill_start_time = rospy.Time.now()
         print(f"订单{waybill['index']}: Begin to dispatch, 还未进入选车机")      
@@ -558,6 +558,7 @@ class DemoPipeline:
                 # 换电池
                 if(self.des_pos_reached(loading_pos, car_pos, 1) and car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY):
                     print(f"订单{waybill['index']},car_sn:{car_sn},drone_sn:{drone_sn}:换电池")
+                    is_battery_replacement = True
                     self.battery_replacement(
                         drone_sn, 10,  WorkState.MOVE_CAR_TO_LEAVING_POINT)
                     drone_physical_status = next(
@@ -592,7 +593,7 @@ class DemoPipeline:
                     (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                 bind_cargo_id = drone_physical_status.bind_cargo_id
 
-                if bind_cargo_id == 0:
+                if bind_cargo_id == 0 and not is_battery_replacement:
                     # 以防万一，一般不会出现这种情况
                     print(f"订单{waybill['index']},bind_cargoID = 0, 未到orderTime/超过timeout, 回收无人机，开始进入移车环节")
                     # 回收飞机预计3s，挪合适飞机预计3s
@@ -636,9 +637,8 @@ class DemoPipeline:
                         (car for car in self.car_physical_status if car.sn == car_sn), None)
                     drone_physical_status = next(
                         (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
-                print(f"订单{waybill['index']},载无人机起飞的小车离开装货点, 等待{move_car_time}秒保证下一台车到达装货点开启下一单")
                 Ready_to_next_waybill_time = (rospy.Time.now() - dispatching_start_time).to_sec()
-                print(f"订单{waybill['index']}, car_sn:{car_sn}: 当前订单到移车开始用时{Ready_to_next_waybill_time}秒(观察指标),可能需要等待(订单周期为{Moving_car_Cycle}s)才可以释放下一单信号量")
+                print(f"订单{waybill['index']}, car_sn:{car_sn}: 离开装货点, 当前订单到移车开始用时{Ready_to_next_waybill_time}秒(观察指标),可能需要等待(订单周期为{Moving_car_Cycle}s)才可以释放下一单信号量")
                 if Ready_to_next_waybill_time < Moving_car_Cycle:
                     rospy.sleep(Moving_car_Cycle-Ready_to_next_waybill_time)
                     print(f"等待时间结束，释放下一单信号量")
@@ -940,6 +940,7 @@ class DemoPipeline:
                         state = WorkState.SELACT_WAYBILL_CAR_DRONE
                         # 在 running() 方法中为每个线程初始化 is_empty_car
                         is_empty_car = False     # 初始化为 False，表示默认不是空车
+                        is_battery_replacement = False
                         bind_cargo_attempts = 0  # 用于跟踪绑定货物的尝试次数
 
                         select_start_time_ms = int(rospy.get_time() * 1000) - self.running_start_time_ms
@@ -961,7 +962,7 @@ class DemoPipeline:
                             print("********************")
                             thread = threading.Thread(
                                 target=self.dispatching, 
-                                args=(car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car, bind_cargo_attempts)
+                                args=(car_list, loading_pos, birth_pos, takeoff_pos, landing_pos, waybill, flying_height, state, is_empty_car, bind_cargo_attempts, is_battery_replacement)
                             )
                             threads.append(thread)
                             thread.start()
