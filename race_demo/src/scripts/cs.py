@@ -624,13 +624,15 @@ class DemoPipeline:
                 # 小车搭载挂外卖的无人机到达起飞点
                 self.move_car_to_target_pos(car_list)
 
-                while not car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY:
-                    # print(f"car_sn:{car_sn}小车正在移动中...小车状态为:{car_physical_status.car_work_state}")
-                    rospy.sleep(1)  # 每隔时间检查一次位置不符合，有可能
+                while not self.des_pos_reached(car_physical_status.pos.position, takeoff_pos, 0.5):
+                    # print(f"car_sn:{car_sn}小车正在移动中...当前坐标:{car_physical_status.pos.position}")
+                    rospy.sleep(0.5)  # 每隔时间检查一次位置
                     car_physical_status = next(
                         (car for car in self.car_physical_status if car.sn == car_sn), None)
                     drone_physical_status = next(
                         (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
+
+                    
                 MOVE_CAR_TO_LEAVING_POINT_time = (rospy.Time.now() - MOVE_CAR_TO_LEAVING_POINT_start).to_sec()
                 print(f"订单{waybill['index']},载无人机起飞的小车移动完毕, 该小车移动时间(开始运动到运动结束)为{MOVE_CAR_TO_LEAVING_POINT_time}")
 
@@ -833,12 +835,12 @@ class DemoPipeline:
             self.loading_cargo_point['z']
         )
         # 起飞点
-        takeoff_pos = Position(185,431,-16)
+        takeoff_pos = Position(186,431,-16)
         # 降落点
         landing_pos = Position(183,438,-16)
         # 定义循环路径点
         points = [
-            Position(185,431,-16),
+            Position(186,431,-16),
             Position(183,438,-16),
             Position(190,440,-16),
             Position(198,437,-16),
