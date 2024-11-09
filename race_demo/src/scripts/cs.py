@@ -475,7 +475,7 @@ class DemoPipeline:
                     else:
                         print("Order with index not found.")
 
-                print(f"订单{waybill['index']}正在等待前一单移车完成/放弃执行再开始订单...")
+                print(f"订单{waybill['index']}正在等待前一单离开装载点...")
                 self.order_semaphore.acquire()  # (-1)阻塞，等待前一单完成并释放信号量
 
                 with self.lock:
@@ -617,11 +617,11 @@ class DemoPipeline:
 
                 # 移车估计用时12s，loading_pos前一辆预计9s
                 MOVE_CAR_TO_LEAVING_POINT_time = (rospy.Time.now() - dispatching_start_time).to_sec()
-                print(f"car_sn:{car_sn}:前一单无人机已起飞，前前单无人机已降落，从订单开始到移车开始:{MOVE_CAR_TO_LEAVING_POINT_time}秒(观察指标),可能需要等待(准备周期20s)")
+                print(f"car_sn:{car_sn}:前一单无人机已起飞，前前单无人机已降落，从订单开始到移车开始前准备完成:{MOVE_CAR_TO_LEAVING_POINT_time}秒(观察指标),可能需要等待(准备周期20s)")
                 if MOVE_CAR_TO_LEAVING_POINT_time < Preparation_Cycle:
                     rospy.sleep(Preparation_Cycle-MOVE_CAR_TO_LEAVING_POINT_time)
                 else:
-                    print(f"订单{waybill['index']}, car_sn:{car_sn}:移车前准备超时，可能需要调整时间")
+                    print(f"订单{waybill['index']}, car_sn:{car_sn}:移车前准备超时, 需要{MOVE_CAR_TO_LEAVING_POINT_time}秒，可能需要调整时间")
 
                 print(f"订单{waybill['index']}, car_sn:{car_sn}开始运动")
                 MOVE_CAR_TO_LEAVING_POINT_start = rospy.Time.now()
@@ -656,7 +656,7 @@ class DemoPipeline:
                 print(f"订单{waybill['index']},载无人机起飞的小车到达起飞点, 该小车移动时间(开始运动到运动结束)为{MOVE_CAR_TO_LEAVING_POINT_time}")
 
                 start_to_move_finish_time = (rospy.Time.now() - dispatching_start_time).to_sec()
-                print(f"订单{waybill['index']},car_sn:{car_sn},drone_sn:{drone_sn}:从订单开始到移车结束: {start_to_move_finish_time}秒(观察指标)")
+                print(f"订单{waybill['index']},car_sn:{car_sn},drone_sn:{drone_sn}:从订单开始到移车结束: {start_to_move_finish_time}秒")
 
                 if is_empty_car:
                     # 空车情况
