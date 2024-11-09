@@ -839,14 +839,14 @@ class DemoPipeline:
             self.loading_cargo_point['z']
         )
         # 起飞点
-        takeoff_pos = Position(186,431,-16)
+        takeoff_pos = Position(187,431,-16)
         # 降落点
-        landing_pos = Position(183,438,-16)
+        landing_pos = Position(181,434,-16)
         # 定义循环路径点
         points = [
             Position(187,431,-16),
-            Position(182,432,-16),
-            Position(193,439,-16),
+            Position(181,434,-16),
+            Position(193,440,-16),
             Position(199,431,-16),
             Position(193,431,-16),
             loading_pos]
