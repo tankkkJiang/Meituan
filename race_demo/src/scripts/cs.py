@@ -606,9 +606,9 @@ class DemoPipeline:
             elif state == WorkState.MOVE_CAR_TO_LEAVING_POINT:
                 # 等待前一单无人机起飞完成
                 if self.waybill_count_start > 1:
-                    print(f"car_sn:{car_sn}:等待前一单无人机起飞...")
+                    print(f"订单{waybill['index']}, car_sn:{car_sn}:等待前一单无人机起飞...")
                     self.drone_takeoff_semaphore.acquire()  # 阻塞，直到无人机成功起飞(-1)
-                print(f"car_sn:{car_sn}:等待前一单无人机降落...")
+                print(f"订单{waybill['index']}, car_sn:{car_sn}:等待前一单无人机降落...")
                 self.drone_landing_semaphore.acquire()  # 阻塞，直到降落信号量被释放(-1)
 
                 # 移车估计用时15s
@@ -616,8 +616,10 @@ class DemoPipeline:
                 print(f"car_sn:{car_sn}:前一单无人机已起飞，前前单无人机已降落，从订单开始到移车开始:{MOVE_CAR_TO_LEAVING_POINT_time}秒(观察指标),可能需要等待(准备周期)")
                 if MOVE_CAR_TO_LEAVING_POINT_time < Preparation_Cycle:
                     rospy.sleep(Preparation_Cycle-MOVE_CAR_TO_LEAVING_POINT_time)
+                else:
+                    print(f"订单{waybill['index']}, car_sn:{car_sn}:移车前准备超时，可能需要调整时间")
 
-                print(f"car_sn:{car_sn}开始运动")
+                print(f"订单{waybill['index']}, car_sn:{car_sn}开始运动")
                 MOVE_CAR_TO_LEAVING_POINT_start = rospy.Time.now()
                 # 小车搭载挂外卖的无人机到达起飞点
                 self.move_car_to_target_pos(car_list)
@@ -637,6 +639,8 @@ class DemoPipeline:
                 if start_to_move_finish_time < Moving_car_cycle:
                     rospy.sleep(Moving_car_cycle-start_to_move_finish_time)
                     print(f"订单{waybill['index']},car_sn:{car_sn},drone_sn:{drone_sn}: 等待{Moving_car_cycle-start_to_move_finish_time}秒才释放下一单的开始/空单重复, 保证一个周期{Moving_car_cycle}s")
+                else:
+                    print(f"订单{waybill['index']},car_sn:{car_sn}: 准备时间和移车时间超时，大于一个周期，可能需要调整")
 
                 if is_empty_car:
                     # 空车情况
