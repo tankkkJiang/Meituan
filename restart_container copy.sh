@@ -40,8 +40,9 @@ appKey：caef89855ac242dde4285a160cebd253
 appSecret：d97f48248c7eb859fa612eed9451adda
 
 
-docker commit race_user_sdk_container  race_user:1006.888
+docker commit race_user_sdk_container  race_user:1110.v1
+docker images
 
-docker tag race_user:1006.888 uav-challenge.tencentcloudcr.com/uav_challenge_2024/caef89855ac242dde4285a160cebd253:1006.888
+docker tag race_user:1006.888 uav-challenge.tencentcloudcr.com/uav_challenge_2024/caef89855ac242dde4285a160cebd253:1110.v1
 
-docker push uav-challenge.tencentcloudcr.com/uav_challenge_2024/caef89855ac242dde4285a160cebd253:1006.888
+docker push uav-challenge.tencentcloudcr.com/uav_challenge_2024/caef89855ac242dde4285a160cebd253:1110.v1
