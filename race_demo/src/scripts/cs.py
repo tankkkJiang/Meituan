@@ -35,8 +35,8 @@ from collections import deque
 
 # demo定义的状态流转
 
-Moving_car_Cycle = 29   # 总操作
-Preparation_Cycle = 20  # 包括换机、换电等操作
+Moving_car_Cycle = 28   # 总操作
+Preparation_Cycle = 19  # 包括换机、换电等操作, 不换电
 move_car_time = 9       # loading_pos前一台车移动所需时间
 
 class WorkState(Enum):
@@ -551,26 +551,29 @@ class DemoPipeline:
                     state =  WorkState.MOVE_CARGO_IN_DRONE
             elif state == WorkState.DRONE_BATTERY_REPLACEMENT:
                 # 检查一下车的位置
-                DRONE_BATTERY_REPLACEMENT_start = rospy.Time.now()
+                # DRONE_BATTERY_REPLACEMENT_start = rospy.Time.now()
                 car_physical_status = next(
                     (car for car in self.car_physical_status if car.sn == car_sn), None)
                 car_pos = car_physical_status.pos.position
                 # 换电池
                 if(self.des_pos_reached(loading_pos, car_pos, 1) and car_physical_status.car_work_state == CarPhysicalStatus.CAR_READY):
-                    print(f"订单{waybill['index']},car_sn:{car_sn},drone_sn:{drone_sn}:换电池")
+                    print(f"订单{waybill['index']},car_sn:{car_sn},drone_sn:{drone_sn}:电池没电，不换电池，直接回收无人机")
                     is_battery_replacement = True
-                    self.battery_replacement(
-                        drone_sn, 10,  WorkState.MOVE_CAR_TO_LEAVING_POINT)
+                    # self.battery_replacement(drone_sn, 10,  WorkState.MOVE_CAR_TO_LEAVING_POINT)
                     drone_physical_status = next(
                         (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
-                    print(f"换电后无人机{drone_sn}电量为:{drone_physical_status.remaining_capacity}")
+                    # print(f"换电后无人机{drone_sn}电量为:{drone_physical_status.remaining_capacity}")
+                    print(f"不换电后无人机{drone_sn}，直接回收无人机，设置为空车行走")
+                    self.drone_retrieve(
+                        drone_sn, car_sn, 3, WorkState.MOVE_CAR_TO_LEAVING_POINT)
+                    is_empty_car = True  # 设置为空车行走
                     # print(f"car_sn:{car_sn},drone_sn:{drone_sn}:回收无人机")
                     # self.drone_retrieve(
                     #     drone_sn, car_sn, 3,  WorkState.MOVE_CAR_TO_LEAVING_POINT)
                     # drone_sn = ''
-                    DRONE_BATTERY_REPLACEMENT_time = (rospy.Time.now() - DRONE_BATTERY_REPLACEMENT_start).to_sec()
-                    print(f"无人机换电用时:{DRONE_BATTERY_REPLACEMENT_time}秒，开始进入绑定外卖环节")
-                    state = WorkState.MOVE_CARGO_IN_DRONE
+                    # DRONE_BATTERY_REPLACEMENT_time = (rospy.Time.now() - DRONE_BATTERY_REPLACEMENT_start).to_sec()
+                    # print(f"无人机换电用时:{DRONE_BATTERY_REPLACEMENT_time}秒，开始进入绑定外卖环节")
+                    state = WorkState.MOVE_CAR_TO_LEAVING_POINT
             elif state == WorkState.MOVE_CARGO_IN_DRONE:
                 MOVE_CARGO_IN_DRONE_start = rospy.Time.now()
                 if self.waybill_count_start == 1:
