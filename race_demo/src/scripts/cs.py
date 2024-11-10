@@ -852,7 +852,7 @@ class DemoPipeline:
         # 起飞点
         takeoff_pos = Position(183,431,-16)
         # 降落点
-        landing_pos = Position(184,437,-16)
+        landing_pos = Position(184,438,-16)
         # 定义循环路径点
         points = [
             Position(183,431,-16),
