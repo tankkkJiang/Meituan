@@ -532,10 +532,6 @@ class DemoPipeline:
                     else:
                         print(f"订单{waybill['index']}, car_sn:{car_sn}车上有电量充足的无人机，进入绑货物")
                         state = WorkState.MOVE_CARGO_IN_DRONE
-                        
-                        print("测试换电")
-                        print(f"订单{waybill['index']}, {car_sn}其他合适的无人机也没电了，进入换电池")
-                        state = WorkState.DRONE_BATTERY_REPLACEMENT
                 print(f"car_sn:{car_sn},drone_sn:{drone_sn},waybill:{waybill['cargoParam']['index']}")
                 # print(f"loading_pos:{loading_pos},\n takeoff_pos:{takeoff_pos}\n, landing_pos:{landing_pos}\n,flying_height:{flying_height}")
             elif state == WorkState.MOVE_DRONE_ON_CAR:
@@ -622,7 +618,7 @@ class DemoPipeline:
 
                 # 移车估计用时12s，loading_pos前一辆预计9s
                 MOVE_CAR_TO_LEAVING_POINT_time = (rospy.Time.now() - dispatching_start_time).to_sec()
-                print(f"car_sn:{car_sn}:前一单无人机已起飞，前前单无人机已降落，从订单开始到移车开始前准备完成:{MOVE_CAR_TO_LEAVING_POINT_time}秒(观察指标),可能需要等待(准备周期20s)")
+                print(f"car_sn:{car_sn}:前一单无人机已起飞，前前单无人机已降落，从订单开始到移车开始前准备完成:{MOVE_CAR_TO_LEAVING_POINT_time}秒(观察指标),可能需要等待(准备周期{Preparation_Cycle}s)")
                 if MOVE_CAR_TO_LEAVING_POINT_time < Preparation_Cycle:
                     rospy.sleep(Preparation_Cycle-MOVE_CAR_TO_LEAVING_POINT_time)
                 else:
