@@ -856,10 +856,10 @@ class DemoPipeline:
         # 定义循环路径点
         points = [
             Position(183,431,-16),
-            Position(184,437,-16),
+            Position(184,438,-16),
             Position(190,440,-16),
             Position(199,435,-16),
-            Position(195.5,426,-16),
+            Position(196,427,-16),
             loading_pos]
         # 小车位置信息
         car_info = [
