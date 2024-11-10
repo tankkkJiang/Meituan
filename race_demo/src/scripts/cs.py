@@ -35,9 +35,9 @@ from collections import deque
 
 # demo定义的状态流转
 
-Moving_car_Cycle = 28   # 总操作
+Moving_car_Cycle = 29   # 总操作
 Preparation_Cycle = 20  # 包括换机、换电等操作
-move_car_time = 8       # loading_pos前一台车移动所需时间
+move_car_time = 9       # loading_pos前一台车移动所需时间
 
 class WorkState(Enum):
     START = 1
