@@ -564,8 +564,7 @@ class DemoPipeline:
                         (drone for drone in self.drone_physical_status if drone.sn == drone_sn), None)
                     # print(f"换电后无人机{drone_sn}电量为:{drone_physical_status.remaining_capacity}")
                     print(f"不换电后无人机{drone_sn}，直接回收无人机，设置为空车行走")
-                    self.drone_retrieve(
-                        drone_sn, car_sn, 3, WorkState.MOVE_CAR_TO_LEAVING_POINT)
+                    self.drone_retrieve(drone_sn, car_sn, 3, WorkState.MOVE_CAR_TO_LEAVING_POINT)
                     is_empty_car = True  # 设置为空车行走
                     # print(f"car_sn:{car_sn},drone_sn:{drone_sn}:回收无人机")
                     # self.drone_retrieve(
