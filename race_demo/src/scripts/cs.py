@@ -521,11 +521,16 @@ class DemoPipeline:
                             state = WorkState.DRONE_BATTERY_REPLACEMENT
                         else:
                             # 回收飞机预计3s，挪合适飞机预计3s
-                            self.drone_retrieve(
-                                drone_sn, car_sn, 3, WorkState.MOVE_DRONE_ON_CAR)
-                            drone_sn = drone_physical_status.sn
+                            # self.drone_retrieve(
+                            #     drone_sn, car_sn, 3, WorkState.MOVE_DRONE_ON_CAR)
+                            # drone_sn = drone_physical_status.sn
                             print(f"订单{waybill['index']}, {car_sn}换合适的无人机{drone_sn}")
-                            state = WorkState.MOVE_DRONE_ON_CAR
+                            # state = WorkState.MOVE_DRONE_ON_CAR
+
+                            print("测试换电")
+                            print(f"订单{waybill['index']}, {car_sn}其他合适的无人机也没电了，进入换电池")
+                            state = WorkState.DRONE_BATTERY_REPLACEMENT
+                            
                     elif drone_physical_status.bind_cargo_id:  # 额外检查，防止挂两个货物
                         print(f"无人机{drone_sn}已绑定货物，可能会导致出错")
                         state = WorkState.MOVE_CARGO_IN_DRONE
